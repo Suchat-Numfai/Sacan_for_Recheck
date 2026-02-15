@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production | Siampress</title>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="icon" type="image/png" href="./favicon.png"> 
+    <style>
+        /* เพิ่มสไตล์พิเศษเพื่อให้ Footer อยู่ด้านล่างของ Sidebar */
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px; /* ปรับขนาดตามความกว้างเดิมของคุณ */
+            background-color: #000;
+            color: white;
+            z-index: 1000;
+        }
+
+        .sidebar-footer {
+            margin-top: auto; /* ดันลงด้านล่างสุด */
+            padding: 20px;
+            font-size: 11px;
+            color: #64748b; /* สีเทาเข้ม */
+            line-height: 1.6;
+            border-top: 1px solid #1e293b;
+        }
+
+        .main-container {
+            margin-left: 250px; /* ให้เนื้อหาไม่โดน sidebar ทับ */
+            padding: 20px;
+        }
+
+        /* คลาสสำหรับซ่อน/แสดง */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="sidebar-nav">
+        <div style="padding: 20px;">
+            <h2 style="color: #3b82f6; margin-bottom: 30px;">Digital Production</h2>
+            <div class="nav-item active" id="menu-save" onclick="switchPage('save')" style="cursor:pointer; padding: 10px 0;">บันทึกข้อมูล</div>
+            <div class="nav-item" id="menu-check" onclick="switchPage('check')" style="cursor:pointer; padding: 10px 0;">ตรวจสอบงานScan</div>
+            <div class="nav-item" id="menu-user" onclick="switchPage('user')" style="cursor:pointer; padding: 10px 0;">QA ผู้ตรวจสอบ</div>
+        </div>
+
+        <div class="sidebar-footer">
+            Kaizen Basic by.สุชาติ นุ่มฝ้าย |<br>
+            SIAMPRESS CO., LTD.
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div id="checkPage" class="hidden">
+            </div>
+
+        <div id="savePage">
+            <h1 class="page-header">บันทึกข้อมูล Production</h1>
+            <p>กรุณาเลือกเมนูจากแถบด้านซ้าย</p>
+        </div>
+
+        <div id="userPage" class="hidden">
+            <h1 class="page-header">จัดการรายชื่อผู้ตรวจสอบ</h1>
+        </div>
+    </div>
+
+    <div id="dupPopup" class="popup-overlay hidden">
+        <div class="popup-content">
+            <div class="popup-icon" style="color: #f59e0b; font-size: 40px;">⚠️</div>
+            <h2>ข้อมูลซ้ำ!</h2>
+            <p id="dupMsg">รายการนี้ถูก Scan ไปแล้ว</p>
+            <button class="btn-close-popup" onclick="closePopup()" style="padding: 10px 20px; cursor: pointer;">ตกลง (Enter)</button>
+        </div>
+    </div>
+
+    <script src="./script-common.js"></script>
+    <script src="./script-check.js"></script>
+    <script src="./script-save.js"></script>
+    <script src="./script-user.js"></script>
+
+    <script>
+        // ฟังก์ชันสำหรับสลับหน้าจอ
+        function switchPage(pageId) {
+            // ซ่อนทุกหน้า
+            document.getElementById('savePage').classList.add('hidden');
+            document.getElementById('checkPage').classList.add('hidden');
+            document.getElementById('userPage').classList.add('hidden');
+            
+            // ลบ class active จากเมนูทั้งหมด
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            // แสดงหน้าเป้าหมาย
+            document.getElementById(pageId + 'Page').classList.remove('hidden');
+            document.getElementById('menu-' + pageId).classList.add('active');
+            
+            // ถ้าไปหน้าสแกน ให้เรียกใช้ฟังก์ชันโหลดพนักงาน (ถ้ามีใน script-check.js)
+            if (pageId === 'check' && typeof refreshCheckStaffDropdown === 'function') {
+                refreshCheckStaffDropdown();
+            }
+        }
+
+        function closePopup() {
+            document.getElementById('dupPopup').classList.add('hidden');
+            const scanInput = document.getElementById('scanInput');
+            if (scanInput) scanInput.focus();
+        }
+    </script>
+</body>
+</html>
