@@ -157,9 +157,6 @@ document.getElementById('checkPage').innerHTML = `
         </div>
     </div>
 `;
-
-// --- ฟังก์ชันหลักทั้งหมด (คงเดิมจากไฟล์ script-check.js ของคุณ) ---
-// ... (ฟังก์ชัน refreshCheckStaffDropdown, handleFileCheck, importCheckData ฯลฯ) ...
 // --- ฟังก์ชันหลัก ---
 
 function refreshCheckStaffDropdown() {
@@ -382,24 +379,9 @@ function confirmResetImport() {
         }
     });
 }
-
-
 function toggleCustomBankInput(s) {
     const inp = document.getElementById('customBankInput');
     if (s.value === 'custom') { inp.classList.remove('hidden'); inp.focus(); } else { inp.classList.add('hidden'); }
 }
 
 document.addEventListener('click', (e) => { if (document.getElementById('dashArea') && !document.getElementById('dashArea').contains(e.target)) closeOfficeMenu(); });
-
-
-
-
-
-
-
-
-
-
-
-
-
