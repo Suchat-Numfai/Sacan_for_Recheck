@@ -241,6 +241,11 @@ function toggleOfficeMenu(e, type) {
             <div><b>ลำดับ: ${i.scanOrder || i.originalIdx}</b> | ${i.val}</div>
             ${i.isScanned || i.type === 'ERROR' ? '<span class="status-ok">✅</span>' : '<span>-</span>'}
         </div>`).join('') : '<div style="text-align:center; padding:10px; color:#94a3b8;">ไม่มีข้อมูล</div>';
+    content.innerHTML = items.length ? items.map(i => `
+    	<div class="detail-box" style="${i.type === 'ERROR' ? 'border-left: 5px solid #ef4444;' : ''}">
+            <div><b>ลำดับ: ${i.scanOrder || i.originalIdx}</b> | ${i.val}</div>
+            ${i.type === 'ERROR' ? '<span style="color:#ef4444; font-weight:bold; font-size:16px;">❌</span>' : (i.isScanned ? '<span class="status-ok">✅</span>' : '<span>-</span>')}
+        </div>`).join('') : '<div style="text-align:center; padding:10px; color:#94a3b8;">ไม่มีข้อมูล</div>';
 }
 
 function closeOfficeMenu() { document.getElementById('officeMenu').classList.add('hidden'); }
@@ -358,6 +363,7 @@ function toggleCustomBankInput(s) {
 }
 
 document.addEventListener('click', (e) => { if (document.getElementById('dashArea') && !document.getElementById('dashArea').contains(e.target)) closeOfficeMenu(); });
+
 
 
 
