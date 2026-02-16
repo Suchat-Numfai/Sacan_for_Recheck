@@ -274,14 +274,22 @@ function handleModalKey(e) {
 
 function updateCheckTable() {
     const tbody = document.getElementById('checkTableBody');
-    const list = [...checkItems.filter(i => i.isScanned).sort((a,b) => b.scanOrder - a.scanOrder), ...checkItems.filter(i => !i.isScanned), ...checkErrors.sort((a,b) => b.scanOrder - a.scanOrder)];
+    
+    // ปรับส่วนนี้: เรียงตามลำดับไฟล์ (originalIdx) เพื่อให้ข้อมูลในตารางคงที่
+    const list = [
+        ...checkItems.sort((a, b) => a.originalIdx - b.originalIdx), 
+        ...checkErrors.sort((a, b) => b.scanOrder - a.scanOrder)
+    ];
+
     tbody.innerHTML = list.length ? list.slice(0, 100).map(i => `
         <tr style="background:${i.type === 'ERROR' ? '#fff1f2' : (i.isScanned ? '#f0fdf4' : 'white')}">
             <td style="padding:10px; text-align:center;">${i.scanOrder || '-'}</td>
             <td style="padding:10px;">${i.isScanned ? i.val : ''}</td>
             <td style="padding:10px;">${i.val}</td>
             <td style="padding:10px; text-align:center;">${i.originalIdx}</td>
-            <td style="padding:10px; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">${i.type==='ERROR' ? 'ไม่พบ' : (i.isScanned ? 'ข้อมูลถูกต้อง✅' : 'รอสแกน')}</td>
+            <td style="padding:10px; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
+                ${i.type==='ERROR' ? 'ไม่พบ' : (i.isScanned ? 'ข้อมูลถูกต้อง' : 'รอสแกน')}
+            </td>
         </tr>`).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่มีข้อมูล</td></tr>';
 }
 
@@ -363,6 +371,7 @@ function toggleCustomBankInput(s) {
 }
 
 document.addEventListener('click', (e) => { if (document.getElementById('dashArea') && !document.getElementById('dashArea').contains(e.target)) closeOfficeMenu(); });
+
 
 
 
