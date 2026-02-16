@@ -294,7 +294,8 @@ function handleModalKey(e) {
 function updateCheckTable() {
     const tbody = document.getElementById('checkTableBody');
     
-    // เรียงตาม originalIdx (ลำดับไฟล์) ตลอดเวลา เพื่อให้บรรทัดคงที่
+    // รวมรายการจากไฟล์ และรายการที่ผิดพลาด
+    // แก้ไข: ให้เรียงตาม originalIdx (ลำดับไฟล์) จากน้อยไปมากเสมอ
     const list = [
         ...checkItems.sort((a, b) => a.originalIdx - b.originalIdx), 
         ...checkErrors.sort((a, b) => b.scanOrder - a.scanOrder)
@@ -390,6 +391,7 @@ function toggleCustomBankInput(s) {
 }
 
 document.addEventListener('click', (e) => { if (document.getElementById('dashArea') && !document.getElementById('dashArea').contains(e.target)) closeOfficeMenu(); });
+
 
 
 
