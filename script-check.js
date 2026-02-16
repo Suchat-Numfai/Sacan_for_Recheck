@@ -216,11 +216,11 @@ document.getElementById('scanInput').addEventListener('keypress', (e) => {
 
 // --- ฟังก์ชันเสริม (Overlay, Modal, Dashboard) ---
 
-function toggleOfficeMenu(type) {
+function toggleOfficeMenu(e, type) {
     const menu = document.getElementById('officeMenu');
     const content = document.getElementById('menuContent');
     const title = document.getElementById('menuTitle');
-    const cardRect = event.currentTarget.getBoundingClientRect();
+    const cardRect = e.currentTarget.getBoundingClientRect();
     const parentRect = document.getElementById('dashArea').getBoundingClientRect();
 
     if (!menu.classList.contains('hidden') && menu.dataset.current === type) { return closeOfficeMenu(); }
@@ -358,3 +358,4 @@ function toggleCustomBankInput(s) {
 }
 
 document.addEventListener('click', (e) => { if (document.getElementById('dashArea') && !document.getElementById('dashArea').contains(e.target)) closeOfficeMenu(); });
+
