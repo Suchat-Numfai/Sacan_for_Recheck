@@ -281,7 +281,7 @@ function updateCheckTable() {
             <td style="padding:10px;">${i.isScanned ? i.val : ''}</td>
             <td style="padding:10px;">${i.val}</td>
             <td style="padding:10px; text-align:center;">${i.originalIdx}</td>
-            <td style="padding:10px; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">${i.type==='ERROR' ? 'ไม่พบ' : (i.isScanned ? 'ข้อมูลถูกต้อง' : 'รอสแกน')}</td>
+            <td style="padding:10px; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">${i.type==='ERROR' ? 'ไม่พบ' : (i.isScanned ? 'ข้อมูลถูกต้อง✅' : 'รอสแกน')}</td>
         </tr>`).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่มีข้อมูล</td></tr>';
 }
 
@@ -298,7 +298,7 @@ function downloadCheckCSV() {
     let csv = "\uFEFFผู้ตรวจสอบ: " + staff + "\nลำดับแสกน,ข้อมูลแสกน,ข้อมูลไฟล์,ลำดับไฟล์,สถานะ\n";
     
     // สร้างเนื้อหา CSV จากรายการที่มีการแสกน
-    checkItems.forEach(i => csv += `${i.scanOrder || '-'},${i.isScanned ? i.val : ''},${i.val},${i.originalIdx},${i.isScanned ? 'ข้อมูลถูกต้อง' : 'รอสแกน'}\n`);
+    checkItems.forEach(i => csv += `${i.scanOrder || '-'},${i.isScanned ? i.val : ''},${i.val},${i.originalIdx},${i.isScanned ? 'ข้อมูลถูกต้อง✅' : 'รอสแกน'}\n`);
     checkErrors.forEach(i => csv += `${i.scanOrder},${i.val},-, -,ไม่พบข้อมูล\n`);
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -363,6 +363,7 @@ function toggleCustomBankInput(s) {
 }
 
 document.addEventListener('click', (e) => { if (document.getElementById('dashArea') && !document.getElementById('dashArea').contains(e.target)) closeOfficeMenu(); });
+
 
 
 
