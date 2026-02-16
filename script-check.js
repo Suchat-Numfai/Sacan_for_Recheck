@@ -132,11 +132,11 @@ document.getElementById('checkPage').innerHTML = `
                     <table style="width:100%; border-collapse:collapse; font-size:13px;">
                         <thead style="background:#f1f5f9; position:sticky; top:0;">
                             <tr>
-                                <th style="padding:10px; border-bottom:1px solid #ddd;">ลำดับสแกน</th>
-                                <th style="padding:10px; border-bottom:1px solid #ddd;">ข้อมูลแสกน</th>
-                                <th style="padding:10px; border-bottom:1px solid #ddd;">ข้อมูลไฟล์</th>
-                                <th style="padding:10px; border-bottom:1px solid #ddd;">ลำดับไฟล์</th>
-                                <th style="padding:10px; border-bottom:1px solid #ddd;">สถานะ</th>
+                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">ลำดับสแกน</th>
+                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">ข้อมูลแสกน</th>
+                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">ข้อมูลไฟล์</th>
+                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">ลำดับไฟล์</th>
+                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">สถานะ</th>
                             </tr>
                         </thead>
                         <tbody id="checkTableBody">
@@ -294,8 +294,7 @@ function handleModalKey(e) {
 function updateCheckTable() {
     const tbody = document.getElementById('checkTableBody');
     
-    // รวมรายการจากไฟล์ และรายการที่ผิดพลาด
-    // แก้ไข: ให้เรียงตาม originalIdx (ลำดับไฟล์) จากน้อยไปมากเสมอ
+    // เรียงตามลำดับไฟล์ (originalIdx) ตลอดเวลา เพื่อให้บรรทัดคงที่ตรงกับหัวข้อ
     const list = [
         ...checkItems.sort((a, b) => a.originalIdx - b.originalIdx), 
         ...checkErrors.sort((a, b) => b.scanOrder - a.scanOrder)
@@ -304,10 +303,10 @@ function updateCheckTable() {
     tbody.innerHTML = list.length ? list.slice(0, 100).map(i => `
         <tr style="background:${i.type === 'ERROR' ? '#fff1f2' : (i.isScanned ? '#f0fdf4' : 'white')}">
             <td style="padding:10px; text-align:center;">${i.scanOrder || '-'}</td>
-            <td style="padding:10px;">${i.isScanned ? i.val : ''}</td>
-            <td style="padding:10px;">${i.val}</td>
+            <td style="padding:10px; text-align:center;">${i.isScanned ? i.val : ''}</td>
+            <td style="padding:10px; text-align:center;">${i.val}</td>
             <td style="padding:10px; text-align:center;">${i.originalIdx}</td>
-            <td style="padding:10px; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
+            <td style="padding:10px; text-align:center; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
                 ${i.type==='ERROR' ? 'ไม่พบ' : (i.isScanned ? 'ข้อมูลถูกต้อง' : 'รอสแกน')}
             </td>
         </tr>`).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่มีข้อมูล</td></tr>';
@@ -391,6 +390,7 @@ function toggleCustomBankInput(s) {
 }
 
 document.addEventListener('click', (e) => { if (document.getElementById('dashArea') && !document.getElementById('dashArea').contains(e.target)) closeOfficeMenu(); });
+
 
 
 
