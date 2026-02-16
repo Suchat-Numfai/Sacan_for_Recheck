@@ -39,10 +39,10 @@ document.getElementById('checkPage').innerHTML = `
 
     <h1 class="page-header">ตรวจสอบงาน Scan QA</h1>
     <div class="dashboard" id="dashArea" style="position:relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
-        <div class="card card-blue" onclick="toggleOfficeMenu('total')"><div>ยอดในไฟล์</div><div id="totalCount" class="card-val">0</div></div>
-        <div class="card card-green" onclick="toggleOfficeMenu('scanned')"><div>แสกนพบแล้ว</div><div id="scannedCount" class="card-val">0</div></div>
-        <div class="card card-amber" onclick="toggleOfficeMenu('pending')"><div>ยังไม่ได้แสกน</div><div id="pendingCount" class="card-val">0</div></div>
-        <div class="card card-red" onclick="toggleOfficeMenu('error')"><div>ไม่มีข้อมูล</div><div id="errorCount" class="card-val">0</div></div>
+        <div class="card card-blue" onclick="toggleOfficeMenu(event, 'total')"><div>ยอดในไฟล์</div><div id="totalCount" class="card-val">0</div></div>
+        <div class="card card-green" onclick="toggleOfficeMenu(event, 'scanned')"><div>แสกนพบแล้ว</div><div id="scannedCount" class="card-val">0</div></div>
+        <div class="card card-amber" onclick="toggleOfficeMenu(event, 'pending')"><div>ยังไม่ได้แสกน</div><div id="pendingCount" class="card-val">0</div></div>
+        <div class="card card-red" onclick="toggleOfficeMenu(event, 'error')"><div>ไม่มีข้อมูล</div><div id="errorCount" class="card-val">0</div></div>
 
         <div id="officeMenu" class="detail-overlay hidden">
             <div class="detail-header">
@@ -358,4 +358,5 @@ function toggleCustomBankInput(s) {
 }
 
 document.addEventListener('click', (e) => { if (document.getElementById('dashArea') && !document.getElementById('dashArea').contains(e.target)) closeOfficeMenu(); });
+
 
