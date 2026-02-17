@@ -113,11 +113,11 @@ document.getElementById('checkPage').innerHTML = `
                     <table style="width:100%; border-collapse:collapse; font-size:13px;">
                         <thead style="background:#f1f5f9; position:sticky; top:0;">
                             <tr>
-                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">ลำดับสแกน</th>
-                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">ข้อมูลแสกน</th>
-                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">ข้อมูลไฟล์</th>
-                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">ลำดับไฟล์</th>
-                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">สถานะ</th>
+                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:left;">ลำดับสแกน</th>
+                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:left;">ข้อมูลแสกน</th>
+                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:left;">ข้อมูลไฟล์</th>
+                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:left;">ลำดับไฟล์</th>
+                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:left;">สถานะ</th>
                             </tr>
                         </thead>
                         <tbody id="checkTableBody">
@@ -400,6 +400,7 @@ function toggleCustomBankInput(s) {
 }
 
 document.addEventListener('click', (e) => { if (document.getElementById('dashArea') && !document.getElementById('dashArea').contains(e.target)) closeOfficeMenu(); });
+
 
 
 
