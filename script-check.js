@@ -1,5 +1,5 @@
 // ==========================================
-// Module: ระบบ Scan ตรวจสอบ (Check Page) - Fixed Layout Version
+// Module: ระบบ Scan ตรวจสอบ (Check Page) - Full Fixed Version
 // ==========================================
 
 let checkItems = [];
@@ -10,148 +10,174 @@ let currentFileCheck = '';
 let validCount = 0;
 let errorCount = 0;
 
-// 1. Render UI พร้อม Overlay และ Modal
+// 1. Render UI พร้อมการตั้งค่า CSS ให้ทุกอย่างอยู่ตรงกลาง (Center)
 document.getElementById('checkPage').innerHTML = `
     <style>
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .modal-content { background: white; padding: 40px; border-radius: 24px; text-align: center; width: 380px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); animation: modalScale 0.2s ease-out; }
-        .modal-icon { font-size: 60px; margin-bottom: 20px; display: block; }
-        .modal-title { font-size: 26px; font-weight: bold; color: #000; margin-bottom: 10px; }
-        .modal-text { color: #64748b; font-size: 17px; margin-bottom: 30px; line-height: 1.5; }
-        .modal-footer { display: flex; gap: 10px; }
-        .modal-btn { flex: 1; border: none; padding: 14px 0; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-dark { background: #333; color: white; }
-        .btn-light { background: #f1f5f9; color: #475569; }
-
-        .detail-overlay { position: absolute; top: 0; left: 0; background: white; z-index: 1001; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); padding: 15px; animation: slideInDown 0.2s ease-out; max-height: 500px; display: flex; flex-direction: column; border: 1px solid #e2e8f0; }
-        .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .btn-close-red { background: #ef4444; color: white; border: none; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 11px; font-weight: bold; }
-        .detail-list { overflow-y: auto; flex-grow: 1; padding-right: 5px; }
-        .detail-box { background: #fff; border: 1px solid #e2e8f0; border-left: 5px solid #3b82f6; padding: 10px; margin-bottom: 8px; border-radius: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
-        .status-ok { color: #10b981; font-weight: bold; font-size: 14px; }
-        .hidden { display: none !important; }
+        .modal-content { background: white; padding: 40px; border-radius: 24px; text-align: center; width: 380px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
         
-        .box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: left; }
-        .input-order { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 10px; outline: none; font-size: 14px; box-sizing: border-box; text-align: left; }
-        .btn-action { width: 100%; background: #3b82f6; color: white; border: none; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; text-align: center; }
-        .btn-action:hover { background: #2563eb; }
+        /* สไตล์ตารางและการจัดกึ่งกลาง */
+        .table-area th { padding: 12px; border-bottom: 2px solid #e2e8f0; text-align: center !important; vertical-align: middle; }
+        .table-area td { padding: 10px; border-bottom: 1px solid #f1f5f9; text-align: center !important; vertical-align: middle; }
+        
+        .detail-overlay { position: absolute; top: 0; left: 0; background: white; z-index: 1001; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); padding: 15px; max-height: 500px; display: flex; flex-direction: column; border: 1px solid #e2e8f0; }
+        .hidden { display: none !important; }
+        .box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .input-order { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 10px; outline: none; box-sizing: border-box; }
+        .btn-action { width: 100%; background: #3b82f6; color: white; border: none; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: bold; }
     </style>
 
-    <h1 class="page-header">ตรวจสอบงาน Scan QA</h1>
-    <div class="dashboard" id="dashArea" style="position:relative !important; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+    <h1 class="page-header" style="text-align:center;">ตรวจสอบงาน Scan QA</h1>
+    <div class="dashboard" id="dashArea" style="position:relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
         <div class="card card-blue" onclick="toggleOfficeMenu(event, 'total')"><div>ยอดในไฟล์</div><div id="totalCount" class="card-val">0</div></div>
         <div class="card card-green" onclick="toggleOfficeMenu(event, 'scanned')"><div>แสกนพบแล้ว</div><div id="scannedCount" class="card-val">0</div></div>
         <div class="card card-amber" onclick="toggleOfficeMenu(event, 'pending')"><div>ยังไม่ได้แสกน</div><div id="pendingCount" class="card-val">0</div></div>
         <div class="card card-red" onclick="toggleOfficeMenu(event, 'error')"><div>ไม่มีข้อมูล</div><div id="errorCount" class="card-val">0</div></div>
 
         <div id="officeMenu" class="detail-overlay hidden">
-            <div class="detail-header">
-                <b id="menuTitle" style="font-size:15px; line-height:1.2;">รายการทั้งหมด</b>
-                <button onclick="closeOfficeMenu()" class="btn-close-red">ปิด [X]</button>
+            <div class="detail-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <b id="menuTitle">รายการ</b>
+                <button onclick="closeOfficeMenu()" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">ปิด</button>
             </div>
-            <div id="menuContent" class="detail-list"></div>
+            <div id="menuContent" style="overflow-y:auto;"></div>
         </div>
     </div>
 
     <div class="content-grid" style="display: grid; grid-template-columns: 350px 1fr; gap: 20px;">
-        
         <div class="side-controls">
             <div class="box">
-                <button onclick="confirmClearData()" style="display:block; margin: 0 0 15px 0; color:#ef4444; cursor:pointer; background:none; border:none; text-decoration:underline; font-size:12px;">ล้างผลการสแกน (เก็บไฟล์เดิม)</button>
-                <b>1. นำเข้าข้อมูลงาน</b>
-                
-                <div id="importArea" style="margin-top:10px;">
-                    <label style="font-size:12px; display:block; margin-bottom:5px;">ธนาคาร / หน่วยงาน:</label>
-                    <select id="bankSelect" class="input-order" onchange="toggleCustomBankInput(this)">
+                <button onclick="confirmClearData()" style="color:#ef4444; background:none; border:none; text-decoration:underline; font-size:12px; cursor:pointer; margin-bottom:10px;">ล้างผลการสแกน (เก็บไฟล์เดิม)</button>
+                <div id="importArea">
+                    <b>1. นำเข้าข้อมูลงาน</b>
+                    <select id="bankSelect" class="input-order" onchange="toggleCustomBankInput(this)" style="margin-top:10px;">
                         <option value="ธนาคารออมสิน">ธนาคารออมสิน</option>
                         <option value="ธนาคาร ธ.ก.ส.">ธนาคาร ธ.ก.ส.</option>
                         <option value="ทิพยประกันภัย">ทิพยประกันภัย</option>
                         <option value="custom">-- เพิ่มชื่อเอง --</option>
                     </select>
                     <input type="text" id="customBankInput" class="hidden input-order" placeholder="ระบุชื่อหน่วยงาน...">
-                    
-                    <label style="font-size:12px; display:block; margin-bottom:5px;">ผู้ทำการตรวจสอบ:</label>
-                    <select id="checkStaffList" class="input-order"><option value="">-- กรุณาเลือกรายชื่อ --</option></select>
-                    
-                    <label style="font-size:12px; display:block; margin-bottom:5px;">เลือกไฟล์งาน (.txt):</label>
-                    <input type="file" id="fileInput" accept=".txt" onchange="handleFileCheck(event)" style="margin-bottom:10px; font-size:11px; width:100%;">
-                    
+                    <select id="checkStaffList" class="input-order"><option value="">-- เลือกรายชื่อ --</option></select>
+                    <input type="file" id="fileInput" accept=".txt" onchange="handleFileCheck(event)" style="margin-bottom:10px; font-size:11px;">
                     <textarea id="rawText" class="input-order" rows="4" placeholder="วางข้อมูลที่นี่..."></textarea>
                     <button class="btn-action" onclick="importCheckData()">ล็อคข้อมูลเพื่อเริ่มแสกน</button>
                 </div>
-
                 <div id="fileDisplay" class="hidden" style="padding:15px; border:2px dashed #3b82f6; border-radius:12px; background:#eff6ff;">
-                    <div style="margin-bottom: 5px;">
-                        <span style="font-size:12px; color:#64748b;">หน่วยงาน:</span><br>
-                        <b id="displayBankName" style="color:#1e40af; font-size:15px;"></b>
-                    </div>
-                    <div style="margin-bottom: 5px;">
-                        <span style="font-size:12px; color:#64748b;">ชื่อไฟล์:</span><br>
-                        <small id="loadedFileName" style="color:#64748b; font-weight:bold;"></small>
-                    </div>
-                    <div style="margin-bottom: 8px;">
-                        <span style="font-size:12px; color:#64748b;">ผู้ตรวจสอบ:</span><br>
-                        <small id="displayStaffName" style="color:#3b82f6; font-size:14px; font-weight:bold;"></small>
-                    </div>
-                    <button onclick="confirmResetImport()" style="display:block; margin: 10px 0 0 0; font-size:11px; color:#ef4444; cursor:pointer; background:none; border:1px solid #fca5a5; border-radius:4px; padding:4px 10px;">ล้างข้อมูล/เปลี่ยนไฟล์ใหม่</button>
+                    <b id="displayBankName" style="color:#1e40af;"></b><br>
+                    <small id="loadedFileName"></small><br>
+                    <small id="displayStaffName" style="color:#3b82f6; font-weight:bold;"></small>
+                    <button onclick="confirmResetImport()" style="display:block; margin-top:10px; font-size:11px; color:#ef4444; border:1px solid #fca5a5; padding:4px; border-radius:4px; cursor:pointer;">เปลี่ยนไฟล์ใหม่</button>
                 </div>
             </div>
-
             <div class="box">
                 <b>2. สแกนตรวจสอบ</b>
-                <input type="text" id="scanInput" class="input-order" placeholder="สแกนที่นี่..." disabled autocomplete="off" style="margin-top:10px;">
+                <input type="text" id="scanInput" class="input-order" placeholder="สแกนที่นี่..." disabled autocomplete="off" style="margin-top:10px; font-size:18px; text-align:center;">
                 <div id="statusMsg" style="text-align:center; margin-top:15px; font-weight:bold; font-size:20px;"></div>
-                <button onclick="downloadCheckCSV()" id="btnDownload" class="hidden" style="width:100%; margin-top:10px; padding:10px; background:#10b981; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">Download Report</button>
+                <button onclick="downloadCheckCSV()" id="btnDownload" class="hidden" style="width:100%; margin-top:10px; padding:12px; background:#10b981; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">Download Report</button>
             </div>
-        </div> <div class="table-area">
+        </div>
+
+        <div class="table-area">
             <div class="box">
-                <div style="display:flex; justify-content:space-between;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
                     <b>รายการตรวจสอบ</b>
-                    <span id="listProgress" style="font-size:12px; color:#64748b;">รอรับข้อมูล...</span>
+                    <span id="listProgress" style="font-size:12px; color:#64748b;">รอข้อมูล...</span>
                 </div>
-                <div style="max-height:500px; overflow-y:auto; margin-top:10px; border:1px solid #eee; border-radius:8px;">
+                <div style="max-height:550px; overflow-y:auto; margin-top:10px; border:1px solid #eee; border-radius:8px;">
                     <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                        <thead style="background:#f1f5f9; position:sticky; top:0;">
+                        <thead style="background:#f8fafc; position:sticky; top:0; z-index:10;">
                             <tr>
-                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">ลำดับสแกน</th>
-                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">ข้อมูลแสกน</th>
-                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">ข้อมูลไฟล์</th>
-                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">ลำดับไฟล์</th>
-                                <th style="padding:10px; border-bottom:1px solid #ddd; text-align:center;">สถานะ</th>
+                                <th>ลำดับสแกน</th>
+                                <th>ข้อมูลสแกน</th>
+                                <th>ข้อมูลไฟล์</th>
+                                <th>ลำดับไฟล์</th>
+                                <th>สถานะ</th>
                             </tr>
                         </thead>
                         <tbody id="checkTableBody">
-                            <tr><td colspan="5" style="text-align:center; padding:30px; color:#94a3b8;">กรุณานำเข้าข้อมูลเพื่อเริ่มงาน</td></tr>
+                            <tr><td colspan="5" style="padding:40px; color:#94a3b8;">กรุณานำเข้าข้อมูล</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-        </div> </div> <div id="customModal" class="modal-overlay hidden">
+        </div>
+    </div>
+
+    <div id="customModal" class="modal-overlay hidden">
         <div class="modal-content">
-            <span id="mIcon" class="modal-icon">⚠️</span>
-            <div id="mTitle" class="modal-title">แจ้งเตือน</div>
-            <p id="mText" class="modal-text">ข้อความแจ้งเตือน</p>
-            <div class="modal-footer">
-                <button id="mCancelBtn" onclick="closeCustomModal()" class="modal-btn btn-light hidden">ยกเลิก</button>
-                <button id="mConfirmBtn" class="modal-btn btn-dark">ตกลง (Enter)</button>
+            <span id="mIcon" style="font-size:50px;">⚠️</span>
+            <div id="mTitle" style="font-size:22px; font-weight:bold; margin:10px 0;">แจ้งเตือน</div>
+            <p id="mText" style="color:#64748b; margin-bottom:20px;"></p>
+            <div style="display:flex; gap:10px;">
+                <button id="mCancelBtn" onclick="closeCustomModal()" style="flex:1; padding:10px; border-radius:8px; border:none; background:#f1f5f9; cursor:pointer;">ยกเลิก</button>
+                <button id="mConfirmBtn" style="flex:1; padding:10px; border-radius:8px; border:none; background:#333; color:white; cursor:pointer;">ตกลง</button>
             </div>
         </div>
     </div>
 `;
 
-// --- ฟังก์ชันหลักทั้งหมด (คงเดิมจากไฟล์ script-check.js ของคุณ) ---
-// ... (ฟังก์ชัน refreshCheckStaffDropdown, handleFileCheck, importCheckData ฯลฯ) ...
-// --- ฟังก์ชันหลัก ---
+// --- Logic Functions ---
+
+function updateCheckTable() {
+    const tbody = document.getElementById('checkTableBody');
+    const list = [
+        ...checkItems.sort((a, b) => a.originalIdx - b.originalIdx), 
+        ...checkErrors.sort((a, b) => b.scanOrder - a.scanOrder)
+    ];
+
+    tbody.innerHTML = list.length ? list.map(i => `
+        <tr style="background:${i.type === 'ERROR' ? '#fff1f2' : (i.isScanned ? '#f0fdf4' : 'white')}">
+            <td>${i.scanOrder || '-'}</td>
+            <td>${i.isScanned ? i.val : ''}</td>
+            <td>${i.val}</td>
+            <td>${i.originalIdx}</td>
+            <td style="font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
+                ${i.type==='ERROR' ? 'ไม่พบ' : (i.isScanned ? 'ข้อมูลถูกต้อง' : 'รอสแกน')}
+            </td>
+        </tr>`).join('') : '<tr><td colspan="5" style="padding:30px;">ไม่มีข้อมูล</td></tr>';
+}
+
+function updateDashboard() {
+    document.getElementById('totalCount').innerText = checkItems.length;
+    document.getElementById('scannedCount').innerText = validCount;
+    document.getElementById('pendingCount').innerText = checkItems.filter(i => !i.isScanned).length;
+    document.getElementById('errorCount').innerText = errorCount;
+    document.getElementById('listProgress').innerText = `ถูกต้อง: ${validCount} | ไม่พบ: ${errorCount}`;
+}
+
+function downloadCheckCSV() {
+    const staff = document.getElementById('checkStaffList').value;
+    let csv = "\uFEFFผู้ตรวจสอบ: " + staff + "\nลำดับแสกน,ข้อมูลแสกน,ข้อมูลไฟล์,ลำดับไฟล์,สถานะ\n";
+    
+    const scannedList = checkItems.filter(i => i.isScanned).sort((a, b) => a.scanOrder - b.scanOrder);
+    const pendingList = checkItems.filter(i => !i.isScanned).sort((a, b) => a.originalIdx - b.originalIdx);
+    const errorList = [...checkErrors].sort((a, b) => a.scanOrder - b.scanOrder);
+
+    csv += "--- 1. แสกนพบข้อมูล ---\n";
+    scannedList.forEach(i => csv += `${i.scanOrder},${i.val},${i.val},${i.originalIdx},ข้อมูลถูกต้อง✅\n`);
+    
+    csv += "\n--- 2. รายการรอแสกน ---\n";
+    pendingList.forEach(i => csv += `-, ,${i.val},${i.originalIdx},รอสแกน\n`);
+    
+    csv += "\n--- 3. ไม่พบข้อมูล (ล่างสุด) ---\n";
+    errorList.forEach(i => csv += `${i.scanOrder},${i.val},-, -,ไม่พบข้อมูล\n`);
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    let fileNameDisplay = (currentFileCheck || 'Report').replace(/Reprint/g, '');
+    link.download = `QA_Report_${selectedBankCheck}_${fileNameDisplay}.csv`;
+    link.click();
+}
+
+// --- Event Listeners & Helpers ---
 
 function refreshCheckStaffDropdown() {
     const dropdown = document.getElementById('checkStaffList');
     const staffData = JSON.parse(localStorage.getItem('qa_staff_list')) || [];
-    dropdown.innerHTML = '<option value="">-- กรุณาเลือกรายชื่อ --</option>';
+    dropdown.innerHTML = '<option value="">-- เลือกรายชื่อ --</option>';
     staffData.forEach(s => {
         const opt = document.createElement('option');
-        opt.value = s.name; // แก้ไขให้ใช้ชื่อเป็น value
-        opt.text = s.name;
-        dropdown.add(opt);
+        opt.value = s.name; opt.text = s.name; dropdown.add(opt);
     });
 }
 refreshCheckStaffDropdown();
@@ -172,9 +198,7 @@ function importCheckData() {
     const bankSelect = document.getElementById('bankSelect');
     let bankName = bankSelect.value === 'custom' ? document.getElementById('customBankInput').value.trim() : bankSelect.value;
 
-    if (!staff) return showModal({ title: "ข้อมูลไม่ครบ", text: "กรุณาเลือกผู้ทำการตรวจสอบ", icon: "👤" });
-    if (!raw) return showModal({ title: "ข้อมูลไม่ครบ", text: "กรุณานำเข้าไฟล์ Text หรือวางข้อมูล", icon: "📄" });
-    if (!bankName) return showModal({ title: "ข้อมูลไม่ครบ", text: "กรุณาระบุหน่วยงาน", icon: "🏦" });
+    if (!staff || !raw || !bankName) return showModal({ title: "ข้อมูลไม่ครบ", text: "กรุณาระบุข้อมูลให้ครบถ้วน", icon: "👤" });
 
     selectedBankCheck = bankName;
     const lines = raw.split('\n').map(l => l.trim()).filter(l => l !== "");
@@ -214,197 +238,31 @@ document.getElementById('scanInput').addEventListener('keypress', (e) => {
     }
 });
 
-// --- ฟังก์ชันเสริม (Overlay, Modal, Dashboard) ---
-
-function toggleOfficeMenu(e, type) {
-    const menu = document.getElementById('officeMenu');
-    const content = document.getElementById('menuContent');
-    const title = document.getElementById('menuTitle');
-    const cardRect = e.currentTarget.getBoundingClientRect();
-    const parentRect = document.getElementById('dashArea').getBoundingClientRect();
-
-    if (!menu.classList.contains('hidden') && menu.dataset.current === type) { return closeOfficeMenu(); }
-
-    menu.style.left = (cardRect.left - parentRect.left) + 'px';
-    menu.style.width = cardRect.width + 'px';
-    menu.dataset.current = type;
-    menu.classList.remove('hidden');
-    
-    let items = [];
-    if (type === 'total') { title.innerHTML = "ยอดในไฟล์"; items = checkItems; }
-    else if (type === 'scanned') { title.innerHTML = "แสกนพบแล้ว"; items = checkItems.filter(i => i.isScanned); }
-    else if (type === 'pending') { title.innerHTML = "ยังไม่ได้แสกน"; items = checkItems.filter(i => !i.isScanned); }
-    else if (type === 'error') { title.innerHTML = "ไม่พบข้อมูล"; items = checkErrors; }
-
-    content.innerHTML = items.length ? items.map(i => `
-        <div class="detail-box">
-            <div><b>ลำดับ: ${i.scanOrder || i.originalIdx}</b> | ${i.val}</div>
-            ${i.isScanned || i.type === 'ERROR' ? '<span class="status-ok">❌</span>' : '<span>-</span>'}
-        </div>`).join('') : '<div style="text-align:center; padding:10px; color:#94a3b8;">ไม่มีข้อมูล</div>';
-        content.innerHTML = items.length ? items.map(i => `
-    	<div class="detail-box" style="${i.type === 'ERROR' ? 'border-left: 5px solid #ef4444;' : ''}">
-                <div><b>ลำดับ: ${i.scanOrder || i.originalIdx}</b> | ${i.val}</div>
-                ${i.type === 'ERROR' ? '<span style="color:#ef4444; font-weight:bold; font-size:16px;">❌</span>' : (i.isScanned ? '<span class="status-ok">✅</span>' : '<span>-</span>')}
-            </div>`).join('') : '<div style="text-align:center; padding:10px; color:#94a3b8;">ไม่มีข้อมูล</div>';
-}
-
-function closeOfficeMenu() { document.getElementById('officeMenu').classList.add('hidden'); }
-
 function showModal({ title, text, icon, showCancel, onConfirm }) {
     document.getElementById('mTitle').innerText = title;
     document.getElementById('mText').innerText = text;
     document.getElementById('mIcon').innerText = icon || '⚠️';
-    const cBtn = document.getElementById('mCancelBtn');
-    if (showCancel) cBtn.classList.remove('hidden'); else cBtn.classList.add('hidden');
+    document.getElementById('mCancelBtn').style.display = showCancel ? 'block' : 'none';
     document.getElementById('mConfirmBtn').onclick = () => { if (onConfirm) onConfirm(); closeCustomModal(); };
     document.getElementById('customModal').classList.remove('hidden');
-    window.addEventListener('keydown', handleModalKey);
 }
 
-function closeCustomModal() {
-    document.getElementById('customModal').classList.add('hidden');
-    window.removeEventListener('keydown', handleModalKey);
+function closeCustomModal() { 
+    document.getElementById('customModal').classList.add('hidden'); 
     setTimeout(() => document.getElementById('scanInput').focus(), 100);
 }
 
-function handleModalKey(e) {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('mConfirmBtn').click(); }
-    if (e.key === 'Escape') closeCustomModal();
-}
-
-
-    const tbody = document.getElementById('checkTableBody');
-    
-    // เรียงตามลำดับไฟล์ (originalIdx) ตลอดเวลา เพื่อให้บรรทัดคงที่ตรงกับหัวข้อ
-    const list = [
-        ...checkItems.sort((a, b) => a.originalIdx - b.originalIdx), 
-        ...checkErrors.sort((a, b) => b.scanOrder - a.scanOrder)
-    ];
-
-    tbody.innerHTML = list.length ? list.slice(0, 100).map(i => `
-        <tr style="background:${i.type === 'ERROR' ? '#fff1f2' : (i.isScanned ? '#f0fdf4' : 'white')}">
-            <td style="padding:10px; text-align:left;">${i.scanOrder || '-'}</td>
-            <td style="padding:10px; text-align:left;">${i.isScanned ? i.val : ''}</td>
-            <td style="padding:10px; text-align:left;">${i.val}</td>
-            <td style="padding:10px; text-align:left;">${i.originalIdx}</td>
-            <td style="padding:10px; text-align:left; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
-                ${i.type==='ERROR' ? 'ไม่พบ' : (i.isScanned ? 'ข้อมูลถูกต้อง' : 'รอสแกน')}
-            </td>
-        </tr>`).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่มีข้อมูล</td></tr>';
-}
-
-function updateDashboard() {
-    document.getElementById('totalCount').innerText = checkItems.length;
-    document.getElementById('scannedCount').innerText = validCount;
-    document.getElementById('pendingCount').innerText = checkItems.filter(i => !i.isScanned).length;
-    document.getElementById('errorCount').innerText = errorCount;
-    document.getElementById('listProgress').innerText = `ข้อมูลถูกต้อง: ${validCount} | ไม่พบ: ${errorCount}`;
-}
-
-function downloadCheckCSV() {
-    const staff = document.getElementById('checkStaffList').value;
-    let csv = "\uFEFFผู้ตรวจสอบ: " + staff + "\nลำดับแสกน,ข้อมูลแสกน,ข้อมูลไฟล์,ลำดับไฟล์,สถานะ\n";
-    
-    // --- 1. เตรียมข้อมูลแต่ละกลุ่ม ---
-    
-    // กลุ่มที่ 1: แสกนแล้ว (ข้อมูลถูกต้อง)
-    const scannedList = checkItems.filter(i => i.isScanned);
-    scannedList.sort((a, b) => a.scanOrder - b.scanOrder); // เรียงตามลำดับแสกน 1, 2, 3...
-
-    // กลุ่มที่ 2: รอแสกน (รายการในไฟล์ที่ยังไม่ถูกแสกน)
-    const pendingList = checkItems.filter(i => !i.isScanned);
-    pendingList.sort((a, b) => a.originalIdx - b.originalIdx); // เรียงตามลำดับบรรทัดในไฟล์
-
-    // กลุ่มที่ 3: ไม่พบข้อมูล (Error)
-    const errorList = [...checkErrors];
-    errorList.sort((a, b) => a.scanOrder - b.scanOrder); // เรียงตามลำดับที่แสกนพลาด
-
-    // --- 2. เขียนข้อมูลลงใน CSV แยกหมวดหมู่ ---
-
-    // ส่วนที่ 1: แสกนแล้ว
-    csv += "--- กลุ่มที่ 1: แสกนพบข้อมูล --- \n";
-    scannedList.forEach(i => {
-        csv += `${i.scanOrder},${i.val},${i.val},${i.originalIdx},ข้อมูลถูกต้อง✅\n`;
-    });
-
-    // ส่วนที่ 2: รอแสกน
-    csv += "\n--- กลุ่มที่ 2: รายการรอแสกน --- \n";
-    pendingList.forEach(i => {
-        csv += `-, ,${i.val},${i.originalIdx},รอสแกน\n`;
-    });
-
-    // ส่วนที่ 3: ไม่พบข้อมูล (อยู่ล่างสุด)
-    csv += "\n--- กลุ่มที่ 3: ไม่พบข้อมูลในไฟล์ --- \n";
-    errorList.forEach(i => {
-        csv += `${i.scanOrder},${i.val},-, -,ไม่พบข้อมูล\n`;
-    });
-
-    // --- 3. เริ่มการดาวน์โหลด ---
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    
-    let fileNameDisplay = (currentFileCheck || 'Report').replace(/Reprint/g, '');
-    link.download = `QA_Scan_Report_${selectedBankCheck}_${fileNameDisplay}.csv`;
-    
-    link.click();
-}
-
-function confirmClearData() {
-    showModal({ title: "ล้างการสแกน", text: "ต้องการล้างผลการสแกนทั้งหมดใช่หรือไม่?", showCancel: true, onConfirm: () => {
-        checkItems.forEach(i => { i.isScanned = false; i.scanOrder = null; });
-        checkErrors = []; checkScannedSet.clear(); validCount = 0; errorCount = 0;
+function confirmResetImport() {
+    showModal({ title: "ยืนยันการเปลี่ยนไฟล์", text: "ต้องการล้างข้อมูลเพื่อนำเข้าไฟล์ใหม่ใช่หรือไม่?", icon: "🔄", showCancel: true, onConfirm: () => {
+        checkItems = []; checkErrors = []; checkScannedSet.clear(); validCount = 0; errorCount = 0;
+        document.getElementById('importArea').classList.remove('hidden');
+        document.getElementById('fileDisplay').classList.add('hidden');
+        document.getElementById('scanInput').disabled = true;
         updateCheckTable(); updateDashboard();
     }});
 }
-
-function confirmResetImport() {
-    showModal({
-        title: "ยืนยันการเปลี่ยนไฟล์",
-        text: "ต้องการล้างข้อมูลทั้งหมดเพื่อนำเข้าไฟล์ใหม่ใช่หรือไม่?",
-        icon: "🔄",
-        showCancel: true,
-        onConfirm: () => {
-            // ล้างตัวแปรทั้งหมด
-            checkItems = []; 
-            checkErrors = []; 
-            checkScannedSet.clear();
-            currentFileCheck = ''; 
-            validCount = 0; 
-            errorCount = 0;
-
-            // รีเซ็ต UI ให้กลับไปหน้าแรกของการนำเข้า
-            document.getElementById('importArea').classList.remove('hidden');
-            document.getElementById('fileDisplay').classList.add('hidden');
-            document.getElementById('rawText').value = '';
-            document.getElementById('fileInput').value = '';
-            document.getElementById('scanInput').value = ''; // ล้างช่องแสกน
-            document.getElementById('scanInput').disabled = true;
-            document.getElementById('statusMsg').innerHTML = '';
-            document.getElementById('btnDownload').classList.add('hidden');
-
-            // อัปเดตการแสดงผลตารางและ Dashboard
-            updateCheckTable(); 
-            updateDashboard();
-            
-            // ปิด Overlay รายการถ้าเปิดอยู่
-            closeOfficeMenu();
-        }
-    });
-}
-
 
 function toggleCustomBankInput(s) {
     const inp = document.getElementById('customBankInput');
     if (s.value === 'custom') { inp.classList.remove('hidden'); inp.focus(); } else { inp.classList.add('hidden'); }
 }
-
-document.addEventListener('click', (e) => { if (document.getElementById('dashArea') && !document.getElementById('dashArea').contains(e.target)) closeOfficeMenu(); });
-
-
-
-
-
-
-
-
