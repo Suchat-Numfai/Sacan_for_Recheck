@@ -1,7 +1,7 @@
 function updateCheckTable() {
     const tbody = document.getElementById('checkTableBody');
     
-    // เรียงตาม originalIdx (ลำดับไฟล์) ตลอดเวลา เพื่อให้บรรทัดคงที่
+    // เรียงตาม originalIdx (ลำดับไฟล์) เพื่อให้บรรทัดคงที่ตามโครงสร้างหน้าจอ
     const list = [
         ...checkItems.sort((a, b) => a.originalIdx - b.originalIdx), 
         ...checkErrors.sort((a, b) => b.scanOrder - a.scanOrder)
@@ -10,10 +10,10 @@ function updateCheckTable() {
     tbody.innerHTML = list.length ? list.slice(0, 100).map(i => `
         <tr style="background:${i.type === 'ERROR' ? '#fff1f2' : (i.isScanned ? '#f0fdf4' : 'white')}">
             <td style="padding:10px; text-align:center;">${i.scanOrder || '-'}</td>
-            <td style="padding:10px;">${i.isScanned ? i.val : ''}</td>
-            <td style="padding:10px;">${i.val}</td>
+            <td style="padding:10px; text-align:center;">${i.isScanned ? i.val : ''}</td>
+            <td style="padding:10px; text-align:center;">${i.val}</td>
             <td style="padding:10px; text-align:center;">${i.originalIdx}</td>
-            <td style="padding:10px; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
+            <td style="padding:10px; text-align:center; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
                 ${i.type==='ERROR' ? 'ไม่พบ' : (i.isScanned ? 'ข้อมูลถูกต้อง' : 'รอสแกน')}
             </td>
         </tr>`).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่มีข้อมูล</td></tr>';
@@ -291,7 +291,7 @@ function handleModalKey(e) {
     if (e.key === 'Escape') closeCustomModal();
 }
 
-function updateCheckTable() {
+
     const tbody = document.getElementById('checkTableBody');
     
     // เรียงตามลำดับไฟล์ (originalIdx) ตลอดเวลา เพื่อให้บรรทัดคงที่ตรงกับหัวข้อ
@@ -419,3 +419,4 @@ function toggleCustomBankInput(s) {
 }
 
 document.addEventListener('click', (e) => { if (document.getElementById('dashArea') && !document.getElementById('dashArea').contains(e.target)) closeOfficeMenu(); });
+
