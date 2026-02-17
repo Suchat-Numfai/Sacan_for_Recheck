@@ -157,6 +157,9 @@ document.getElementById('checkPage').innerHTML = `
         </div>
     </div>
 `;
+
+// --- ฟังก์ชันหลักทั้งหมด (คงเดิมจากไฟล์ script-check.js ของคุณ) ---
+// ... (ฟังก์ชัน refreshCheckStaffDropdown, handleFileCheck, importCheckData ฯลฯ) ...
 // --- ฟังก์ชันหลัก ---
 
 function refreshCheckStaffDropdown() {
@@ -299,11 +302,11 @@ function updateCheckTable() {
 
     tbody.innerHTML = list.length ? list.slice(0, 100).map(i => `
         <tr style="background:${i.type === 'ERROR' ? '#fff1f2' : (i.isScanned ? '#f0fdf4' : 'white')}">
-            <td style="padding:10px; text-align:left;">${i.scanOrder || '-'}</td>
-            <td style="padding:10px; text-align:left;">${i.isScanned ? i.val : ''}</td>
-            <td style="padding:10px; text-align:left;">${i.val}</td>
-            <td style="padding:10px; text-align:left;">${i.originalIdx}</td>
-            <td style="padding:10px; text-align:left; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
+            <td style="padding:10px; text-align:center;">${i.scanOrder || '-'}</td>
+            <td style="padding:10px; text-align:center;">${i.isScanned ? i.val : ''}</td>
+            <td style="padding:10px; text-align:center;">${i.val}</td>
+            <td style="padding:10px; text-align:center;">${i.originalIdx}</td>
+            <td style="padding:10px; text-align:center; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
                 ${i.type==='ERROR' ? 'ไม่พบ' : (i.isScanned ? 'ข้อมูลถูกต้อง' : 'รอสแกน')}
             </td>
         </tr>`).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่มีข้อมูล</td></tr>';
@@ -321,18 +324,47 @@ function downloadCheckCSV() {
     const staff = document.getElementById('checkStaffList').value;
     let csv = "\uFEFFผู้ตรวจสอบ: " + staff + "\nลำดับแสกน,ข้อมูลแสกน,ข้อมูลไฟล์,ลำดับไฟล์,สถานะ\n";
     
-    // สร้างเนื้อหา CSV จากรายการที่มีการแสกน
-    checkItems.forEach(i => csv += `${i.scanOrder || '-'},${i.isScanned ? i.val : ''},${i.val},${i.originalIdx},${i.isScanned ? 'ข้อมูลถูกต้อง✅' : 'รอสแกน'}\n`);
-    checkErrors.forEach(i => csv += `${i.scanOrder},${i.val},-, -,ไม่พบข้อมูล\n`);
+    // --- 1. เตรียมข้อมูลแต่ละกลุ่ม ---
+    
+    // กลุ่มที่ 1: แสกนแล้ว (ข้อมูลถูกต้อง)
+    const scannedList = checkItems.filter(i => i.isScanned);
+    scannedList.sort((a, b) => a.scanOrder - b.scanOrder); // เรียงตามลำดับแสกน 1, 2, 3...
 
+    // กลุ่มที่ 2: รอแสกน (รายการในไฟล์ที่ยังไม่ถูกแสกน)
+    const pendingList = checkItems.filter(i => !i.isScanned);
+    pendingList.sort((a, b) => a.originalIdx - b.originalIdx); // เรียงตามลำดับบรรทัดในไฟล์
+
+    // กลุ่มที่ 3: ไม่พบข้อมูล (Error)
+    const errorList = [...checkErrors];
+    errorList.sort((a, b) => a.scanOrder - b.scanOrder); // เรียงตามลำดับที่แสกนพลาด
+
+    // --- 2. เขียนข้อมูลลงใน CSV แยกหมวดหมู่ ---
+
+    // ส่วนที่ 1: แสกนแล้ว
+    csv += "--- กลุ่มที่ 1: แสกนพบข้อมูล --- \n";
+    scannedList.forEach(i => {
+        csv += `${i.scanOrder},${i.val},${i.val},${i.originalIdx},ข้อมูลถูกต้อง✅\n`;
+    });
+
+    // ส่วนที่ 2: รอแสกน
+    csv += "\n--- กลุ่มที่ 2: รายการรอแสกน --- \n";
+    pendingList.forEach(i => {
+        csv += `-, ,${i.val},${i.originalIdx},รอสแกน\n`;
+    });
+
+    // ส่วนที่ 3: ไม่พบข้อมูล (อยู่ล่างสุด)
+    csv += "\n--- กลุ่มที่ 3: ไม่พบข้อมูลในไฟล์ --- \n";
+    errorList.forEach(i => {
+        csv += `${i.scanOrder},${i.val},-, -,ไม่พบข้อมูล\n`;
+    });
+
+    // --- 3. เริ่มการดาวน์โหลด ---
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     
-    // --- จุดที่แก้ไข: เงื่อนไขการตั้งชื่อไฟล์ ---
-    // ใช้ .replace เพื่อเปลี่ยนคำว่า Reprint เป็น M ตามที่คุณต้องการ
     let fileNameDisplay = (currentFileCheck || 'Report').replace(/Reprint/g, '');
-    link.download = `QA Reprint Scan ${selectedBankCheck} ${fileNameDisplay}.csv`;
+    link.download = `QA_Scan_Report_${selectedBankCheck}_${fileNameDisplay}.csv`;
     
     link.click();
 }
@@ -379,6 +411,8 @@ function confirmResetImport() {
         }
     });
 }
+
+
 function toggleCustomBankInput(s) {
     const inp = document.getElementById('customBankInput');
     if (s.value === 'custom') { inp.classList.remove('hidden'); inp.focus(); } else { inp.classList.add('hidden'); }
