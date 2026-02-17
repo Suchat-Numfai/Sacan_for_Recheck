@@ -16,8 +16,9 @@ document.getElementById('checkPage').innerHTML = `
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .modal-content { background: white; padding: 40px; border-radius: 24px; text-align: center; width: 380px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
         
-        /* จัดหัวตารางและเนื้อหาให้ตรงกลาง */
+        /* จัดหัวตารางให้ตรงกลาง */
         .table-area th { padding: 12px; border-bottom: 2px solid #e2e8f0; text-align: center !important; vertical-align: middle; background: #f8fafc; }
+        /* จัดเนื้อหาในตารางให้ตรงกลาง */
         .table-area td { padding: 10px; border-bottom: 1px solid #f1f5f9; text-align: center !important; vertical-align: middle; }
         
         .detail-overlay { position: absolute; top: 0; left: 0; background: white; z-index: 1001; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); padding: 15px; max-height: 500px; display: flex; flex-direction: column; border: 1px solid #e2e8f0; }
@@ -29,18 +30,10 @@ document.getElementById('checkPage').innerHTML = `
 
     <h1 class="page-header" style="text-align:center;">ตรวจสอบงาน Scan QA</h1>
     <div class="dashboard" id="dashArea" style="position:relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
-        <div class="card card-blue" onclick="toggleOfficeMenu(event, 'total')"><div>ยอดในไฟล์</div><div id="totalCount" class="card-val">0</div></div>
-        <div class="card card-green" onclick="toggleOfficeMenu(event, 'scanned')"><div>แสกนพบแล้ว</div><div id="scannedCount" class="card-val">0</div></div>
-        <div class="card card-amber" onclick="toggleOfficeMenu(event, 'pending')"><div>ยังไม่ได้แสกน</div><div id="pendingCount" class="card-val">0</div></div>
-        <div class="card card-red" onclick="toggleOfficeMenu(event, 'error')"><div>ไม่มีข้อมูล</div><div id="errorCount" class="card-val">0</div></div>
-
-        <div id="officeMenu" class="detail-overlay hidden">
-            <div class="detail-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <b id="menuTitle">รายการ</b>
-                <button onclick="closeOfficeMenu()" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">ปิด</button>
-            </div>
-            <div id="menuContent" style="overflow-y:auto;"></div>
-        </div>
+        <div class="card card-blue"><div>ยอดในไฟล์</div><div id="totalCount" class="card-val">0</div></div>
+        <div class="card card-green"><div>แสกนพบแล้ว</div><div id="scannedCount" class="card-val">0</div></div>
+        <div class="card card-amber"><div>ยังไม่ได้แสกน</div><div id="pendingCount" class="card-val">0</div></div>
+        <div class="card card-red"><div>ไม่มีข้อมูล</div><div id="errorCount" class="card-val">0</div></div>
     </div>
 
     <div class="content-grid" style="display: grid; grid-template-columns: 350px 1fr; gap: 20px;">
@@ -126,11 +119,11 @@ function updateCheckTable() {
 
     tbody.innerHTML = list.length ? list.map(i => `
         <tr style="background:${i.type === 'ERROR' ? '#fff1f2' : (i.isScanned ? '#f0fdf4' : 'white')}">
-            <td style="text-align:center;">${i.scanOrder || '-'}</td>
-            <td style="text-align:center;">${i.isScanned ? i.val : ''}</td>
-            <td style="text-align:center;">${i.val}</td>
-            <td style="text-align:center;">${i.originalIdx}</td>
-            <td style="text-align:center; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
+            <td>${i.scanOrder || '-'}</td>
+            <td>${i.isScanned ? i.val : ''}</td>
+            <td>${i.val}</td>
+            <td>${i.originalIdx}</td>
+            <td style="font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
                 ${i.type==='ERROR' ? 'ไม่พบ' : (i.isScanned ? 'ข้อมูลถูกต้อง' : 'รอสแกน')}
             </td>
         </tr>`).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่มีข้อมูล</td></tr>';
@@ -141,7 +134,7 @@ function updateDashboard() {
     document.getElementById('scannedCount').innerText = validCount;
     document.getElementById('pendingCount').innerText = checkItems.filter(i => !i.isScanned).length;
     document.getElementById('errorCount').innerText = errorCount;
-    document.getElementById('listProgress').innerText = `ถูกต้อง: ${validCount} | ไม่พบ: ${errorCount}`;
+    document.getElementById('listProgress').innerText = `ข้อมูลถูกต้อง: ${validCount} | ไม่พบ: ${errorCount}`;
 }
 
 function downloadCheckCSV() {
@@ -169,7 +162,7 @@ function downloadCheckCSV() {
     link.click();
 }
 
-// --- Event Listeners & Helpers ---
+// --- Helper Functions ---
 
 function refreshCheckStaffDropdown() {
     const dropdown = document.getElementById('checkStaffList');
@@ -249,10 +242,7 @@ function showModal({ title, text, icon, showCancel, onConfirm }) {
 
 function closeCustomModal() { 
     document.getElementById('customModal').classList.add('hidden'); 
-    setTimeout(() => {
-        const input = document.getElementById('scanInput');
-        if (input) input.focus();
-    }, 100);
+    setTimeout(() => { document.getElementById('scanInput').focus(); }, 100);
 }
 
 function confirmResetImport() {
@@ -261,7 +251,6 @@ function confirmResetImport() {
         document.getElementById('importArea').classList.remove('hidden');
         document.getElementById('fileDisplay').classList.add('hidden');
         document.getElementById('scanInput').disabled = true;
-        document.getElementById('rawText').value = '';
         document.getElementById('statusMsg').innerHTML = '';
         updateCheckTable(); updateDashboard();
     }});
@@ -278,17 +267,5 @@ function confirmClearData() {
 
 function toggleCustomBankInput(s) {
     const inp = document.getElementById('customBankInput');
-    if (inp) {
-        if (s.value === 'custom') { inp.classList.remove('hidden'); inp.focus(); } 
-        else { inp.classList.add('hidden'); }
-    }
-}
-
-function toggleOfficeMenu(e, type) {
-    // ฟังก์ชันนี้เก็บไว้เพื่อให้ระบบไม่พังหากมีการคลิก Dashboard
-}
-
-function closeOfficeMenu() {
-    const menu = document.getElementById('officeMenu');
-    if (menu) menu.classList.add('hidden');
+    if (s.value === 'custom') { inp.classList.remove('hidden'); inp.focus(); } else { inp.classList.add('hidden'); }
 }
