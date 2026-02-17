@@ -1,23 +1,4 @@
-function updateCheckTable() {
-    const tbody = document.getElementById('checkTableBody');
-    
-    // เรียงตาม originalIdx (ลำดับไฟล์) เพื่อให้บรรทัดคงที่ตามโครงสร้างหน้าจอ
-    const list = [
-        ...checkItems.sort((a, b) => a.originalIdx - b.originalIdx), 
-        ...checkErrors.sort((a, b) => b.scanOrder - a.scanOrder)
-    ];
-
-    tbody.innerHTML = list.length ? list.slice(0, 100).map(i => `
-        <tr style="background:${i.type === 'ERROR' ? '#fff1f2' : (i.isScanned ? '#f0fdf4' : 'white')}">
-            <td style="padding:10px; text-align:left;">${i.scanOrder || '-'}</td>
-            <td style="padding:10px; text-align:left;">${i.isScanned ? i.val : ''}</td>
-            <td style="padding:10px; text-align:left;">${i.val}</td>
-            <td style="padding:10px; text-align:left;">${i.originalIdx}</td>
-            <td style="padding:10px; text-align:left; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
-                ${i.type==='ERROR' ? 'ไม่พบ' : (i.isScanned ? 'ข้อมูลถูกต้อง' : 'รอสแกน')}
-            </td>
-        </tr>`).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่มีข้อมูล</td></tr>';
-}// ==========================================
+// ==========================================
 // Module: ระบบ Scan ตรวจสอบ (Check Page) - Fixed Layout Version
 // ==========================================
 
@@ -419,6 +400,7 @@ function toggleCustomBankInput(s) {
 }
 
 document.addEventListener('click', (e) => { if (document.getElementById('dashArea') && !document.getElementById('dashArea').contains(e.target)) closeOfficeMenu(); });
+
 
 
 
