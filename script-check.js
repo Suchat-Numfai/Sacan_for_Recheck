@@ -16,8 +16,8 @@ document.getElementById('checkPage').innerHTML = `
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .modal-content { background: white; padding: 40px; border-radius: 24px; text-align: center; width: 380px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
         
-        /* สไตล์ตารางและการจัดกึ่งกลาง */
-        .table-area th { padding: 12px; border-bottom: 2px solid #e2e8f0; text-align: center !important; vertical-align: middle; }
+        /* จัดหัวตารางและเนื้อหาให้ตรงกลาง */
+        .table-area th { padding: 12px; border-bottom: 2px solid #e2e8f0; text-align: center !important; vertical-align: middle; background: #f8fafc; }
         .table-area td { padding: 10px; border-bottom: 1px solid #f1f5f9; text-align: center !important; vertical-align: middle; }
         
         .detail-overlay { position: absolute; top: 0; left: 0; background: white; z-index: 1001; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); padding: 15px; max-height: 500px; display: flex; flex-direction: column; border: 1px solid #e2e8f0; }
@@ -84,7 +84,7 @@ document.getElementById('checkPage').innerHTML = `
                 </div>
                 <div style="max-height:550px; overflow-y:auto; margin-top:10px; border:1px solid #eee; border-radius:8px;">
                     <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                        <thead style="background:#f8fafc; position:sticky; top:0; z-index:10;">
+                        <thead style="position:sticky; top:0; z-index:10;">
                             <tr>
                                 <th>ลำดับสแกน</th>
                                 <th>ข้อมูลสแกน</th>
@@ -94,7 +94,7 @@ document.getElementById('checkPage').innerHTML = `
                             </tr>
                         </thead>
                         <tbody id="checkTableBody">
-                            <tr><td colspan="5" style="padding:40px; color:#94a3b8;">กรุณานำเข้าข้อมูล</td></tr>
+                            <tr><td colspan="5" style="padding:40px; color:#94a3b8; text-align:center;">กรุณานำเข้าข้อมูล</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -126,14 +126,14 @@ function updateCheckTable() {
 
     tbody.innerHTML = list.length ? list.map(i => `
         <tr style="background:${i.type === 'ERROR' ? '#fff1f2' : (i.isScanned ? '#f0fdf4' : 'white')}">
-            <td>${i.scanOrder || '-'}</td>
-            <td>${i.isScanned ? i.val : ''}</td>
-            <td>${i.val}</td>
-            <td>${i.originalIdx}</td>
-            <td style="font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
+            <td style="text-align:center;">${i.scanOrder || '-'}</td>
+            <td style="text-align:center;">${i.isScanned ? i.val : ''}</td>
+            <td style="text-align:center;">${i.val}</td>
+            <td style="text-align:center;">${i.originalIdx}</td>
+            <td style="text-align:center; font-weight:bold; color:${i.isScanned ? '#10b981' : (i.type==='ERROR' ? '#ef4444' : '#94a3b8')}">
                 ${i.type==='ERROR' ? 'ไม่พบ' : (i.isScanned ? 'ข้อมูลถูกต้อง' : 'รอสแกน')}
             </td>
-        </tr>`).join('') : '<tr><td colspan="5" style="padding:30px;">ไม่มีข้อมูล</td></tr>';
+        </tr>`).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่มีข้อมูล</td></tr>';
 }
 
 function updateDashboard() {
@@ -249,7 +249,10 @@ function showModal({ title, text, icon, showCancel, onConfirm }) {
 
 function closeCustomModal() { 
     document.getElementById('customModal').classList.add('hidden'); 
-    setTimeout(() => document.getElementById('scanInput').focus(), 100);
+    setTimeout(() => {
+        const input = document.getElementById('scanInput');
+        if (input) input.focus();
+    }, 100);
 }
 
 function confirmResetImport() {
@@ -258,11 +261,34 @@ function confirmResetImport() {
         document.getElementById('importArea').classList.remove('hidden');
         document.getElementById('fileDisplay').classList.add('hidden');
         document.getElementById('scanInput').disabled = true;
+        document.getElementById('rawText').value = '';
+        document.getElementById('statusMsg').innerHTML = '';
+        updateCheckTable(); updateDashboard();
+    }});
+}
+
+function confirmClearData() {
+    showModal({ title: "ล้างการสแกน", text: "ต้องการล้างผลการสแกนทั้งหมดใช่หรือไม่?", icon: "⚠️", showCancel: true, onConfirm: () => {
+        checkItems.forEach(i => { i.isScanned = false; i.scanOrder = null; });
+        checkErrors = []; checkScannedSet.clear(); validCount = 0; errorCount = 0;
+        document.getElementById('statusMsg').innerHTML = '';
         updateCheckTable(); updateDashboard();
     }});
 }
 
 function toggleCustomBankInput(s) {
     const inp = document.getElementById('customBankInput');
-    if (s.value === 'custom') { inp.classList.remove('hidden'); inp.focus(); } else { inp.classList.add('hidden'); }
+    if (inp) {
+        if (s.value === 'custom') { inp.classList.remove('hidden'); inp.focus(); } 
+        else { inp.classList.add('hidden'); }
+    }
+}
+
+function toggleOfficeMenu(e, type) {
+    // ฟังก์ชันนี้เก็บไว้เพื่อให้ระบบไม่พังหากมีการคลิก Dashboard
+}
+
+function closeOfficeMenu() {
+    const menu = document.getElementById('officeMenu');
+    if (menu) menu.classList.add('hidden');
 }
