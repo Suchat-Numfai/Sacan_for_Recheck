@@ -202,4 +202,3 @@ function saveStaffToLocalStorage() {
 }
 // เริ่มต้นหน้าจอ
 renderUserPage();
-}
