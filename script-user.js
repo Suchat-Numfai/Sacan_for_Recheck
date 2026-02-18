@@ -201,4 +201,11 @@ function saveStaffToLocalStorage() {
     localStorage.setItem('qa_staff_list', JSON.stringify(staffList));
 }
 // เริ่มต้นหน้าจอ
-renderUserPage();
+document.addEventListener('DOMContentLoaded', () => {
+    // เช็คก่อนว่ามี Element นี้จริงไหมเพื่อป้องกัน Error
+    if (document.getElementById('userPage')) {
+        renderUserPage();
+    } else {
+        console.error("หา Element 'userPage' ไม่เจอจ้า!");
+    }
+});
