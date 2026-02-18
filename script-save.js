@@ -98,12 +98,11 @@ document.getElementById('savePage').innerHTML = `
                 <div class="table-scroll" style="background: white; border: 1px solid #ddd; border-top: none;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
-                            <tr style="background: #f8fafc; border-bottom: 1px solid #ddd;">
-                                <th style="padding: 10px;">ลำดับ</th>
-                                <th style="padding: 10px;">ข้อมูลที่แสกน</th>
-                                <th style="padding: 10px;">เวลาบันทึก</th>
-                            </tr>
-                        </thead>
+    			        <tr style="background: #f8fafc; border-bottom: 1px solid #ddd;">
+        			<th style="padding: 10px 20px; text-align: center;">ลำดับ</th>
+        			<th style="padding: 10px 20px; text-align: center;">ข้อมูลที่แสกน</th>
+        			<th style="padding: 10px 20px; text-align: center;">เวลาบันทึก</th> </tr>
+			</thead>
                         <tbody id="saveTableBody">
                             <tr><td colspan="3" style="text-align: center; padding: 20px; color: #999;">ยังไม่มีข้อมูล</td></tr>
                         </tbody>
@@ -183,10 +182,15 @@ document.getElementById('saveScanInput').addEventListener('keypress', (e) => {
         }
 
         if (scanVal) {
-            if (saveScannedSet.has(scanVal)) { 
-                showSaveModal({ title: "ข้อมูลซ้ำ!", text: "รายการบาร์โค้ดนี้ถูกแสกนไปแล้ว", icon: "⚠️" });
-                e.target.value = ''; return; 
-            }
+            if (saveScannedSet.has(scanVal)) {
+                showSaveModal({ 
+        	        title: "ข้อมูลซ้ำ!", 
+        	        text: ` ${scanVal} ถูกแสกนไปแล้ว`, 
+        	        icon: "⚠️" 
+    		});
+    		e.target.value = ''; return; 
+	        }
+
 
             orderInput.disabled = true;
             modeSelect.disabled = true;
