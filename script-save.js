@@ -99,9 +99,9 @@ document.getElementById('savePage').innerHTML = `
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
     			        <tr style="background: #f8fafc; border-bottom: 1px solid #ddd;">
-        			<th style="padding: 10px 10px; text-align: center;">ลำดับ</th>
-        			<th style="padding: 10px 10px; text-align: center;">ข้อมูลที่แสกน</th>
-        			<th style="padding: 10px 10px; text-align: center;">เวลาบันทึก</th> </tr>
+        			<th style="padding: 10px 20px; text-align: center;">ลำดับ</th>
+        			<th style="padding: 10px 20px; text-align: center;">ข้อมูลที่แสกน</th>
+        			<th style="padding: 10px 20px; text-align: center;">เวลาบันทึก</th> </tr>
 			</thead>
                         <tbody id="saveTableBody">
                             <tr><td colspan="3" style="text-align: center; padding: 20px; color: #999;">ยังไม่มีข้อมูล</td></tr>
@@ -228,12 +228,7 @@ function updateSaveTable() {
         </tr>
     `).join('');
 }
-/* เพิ่มลงใน style.innerHTML */
-table th, table td {
-    padding: 12px 8px !important;
-    text-align: center !important;
-    vertical-align: middle;
-}
+
 function downloadSaveText() {
     const orderNum = document.getElementById('orderNumber').value.trim();
     if (saveData.length === 0) {
@@ -267,6 +262,3 @@ function confirmClearSaveData() {
         }
     });
 }
-
-
-
