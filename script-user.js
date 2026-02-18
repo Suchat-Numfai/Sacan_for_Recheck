@@ -200,7 +200,6 @@ function handleGeneralEnter(e) {
 function saveStaffToLocalStorage() {
     localStorage.setItem('qa_staff_list', JSON.stringify(staffList));
 }
-
 // เริ่มต้นหน้าจอ
 renderUserPage();
 }
