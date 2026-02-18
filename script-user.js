@@ -117,17 +117,15 @@ function updateStaffTable() {
     }
 
     tbody.innerHTML = staffList.map(staff => `
-        <tr>
-            <td style="font-weight:bold; color:#1e293b;">${staff.id}</td>
-            <td style="text-align:left; padding-left:20px;">${staff.name}</td>
-            <td>
-                <button onclick="openDeleteConfirm('${staff.id}')" style="background:#fee2e2; color:#ef4444; border:1px solid #fecaca; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold; transition:0.2s;">
-                    ลบชื่อ
-                </button>
-            </td>
-        </tr>
-    `).join('');
-}
+    <tr>
+        <td style="text-align: center; font-weight:bold; color:#1e293b;">${staff.id}</td>
+        <td style="text-align: center; color:#1e293b;">${staff.name}</td> <td style="text-align: center;">
+            <button onclick="openDeleteConfirm('${staff.id}')" style="background:#fee2e2; color:#ef4444; border:1px solid #fecaca; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold; transition:0.2s;">
+                ลบชื่อ
+            </button>
+        </td>
+    </tr>
+`).join('');
 
 // 4. ฟังก์ชันจัดการการลบ (ระบบรหัสผ่าน)
 function openDeleteConfirm(id) {
@@ -203,4 +201,5 @@ function saveStaffToLocalStorage() {
 // เริ่มต้นหน้าจอ
 
 renderUserPage();
+
 
