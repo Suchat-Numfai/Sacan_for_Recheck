@@ -40,9 +40,9 @@ function renderUserPage() {
                         <table>
                             <thead>
                                 <tr>
-                                    <th style="width:150px;">รหัสพนักงาน</th>
-                                    <th style="text-align:left; padding-left:20px;">ชื่อ-นามสกุล</th>
-                                    <th style="width:100px;">จัดการ</th>
+                                    <th style="width:150px; text-align: center;">รหัสพนักงาน</th>
+                                    <th style="text-align: center;">ชื่อ-นามสกุล</th> 
+                                    <th style="width:100px; text-align: center;">จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody id="staffTableBody"></tbody>
@@ -201,4 +201,5 @@ function saveStaffToLocalStorage() {
 }
 
 // เริ่มต้นหน้าจอ
+
 renderUserPage();
