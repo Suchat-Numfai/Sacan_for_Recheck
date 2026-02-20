@@ -3,15 +3,18 @@
 // ==========================================
 let checkItems = [];        // รายการจากไฟล์ต้นฉบับ
 let checkErrors = [];       // รายการที่แสกนแล้วไม่พบในไฟล์
+let checkDuplicates = [];   // รายการที่แสกนซ้ำ
 let checkScannedSet = new Set();
 let selectedBankCheck = 'ธนาคารออมสิน';
 let currentFileCheck = '';
-let validCount = 0;         // จำนวนที่พบจริง
-let errorCount = 0;         // จำนวนที่ไม่พบข้อมูล (Dashboard เลขแดง)
-let totalErrorCount = 0;    // ตัวนับลำดับการแสกนแยกเฉพาะกลุ่ม Error
+let validCount = 0;         
+let errorCount = 0;         
+let duplicateCount = 0;     // จำนวนที่ซ้ำ
+let totalScanCount = 0;     // ยอดรวมแสกนทั้งหมด
+let totalErrorCount = 0;    
 
 // ==========================================
-// 2. INITIALIZATION & UI RENDER
+// 2. INITIALIZATION & UI RENDER (ปรับปรุง CSS & Dashboard)
 // ==========================================
 document.getElementById('checkPage').innerHTML = `
     <style>
@@ -35,14 +38,27 @@ document.getElementById('checkPage').innerHTML = `
         .input-order { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 10px; outline: none; font-size: 14px; box-sizing: border-box; text-align: left; }
         .btn-action { width: 100%; background: #3b82f6; color: white; border: none; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; text-align: center; }
         .btn-action:hover { background: #2563eb; }
+
+        /* ปรับปรุงสไตล์ Card ให้เหมือนกันทุกหัวข้อ */
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); text-align: center; cursor: pointer; }
+        .card-val { font-size: 28px; font-weight: 800; margin-top: 5px; }
+        
+        .card-blue   { border-bottom: 4px solid #3b82f6; color: #1e40af; }
+        .card-green  { border-bottom: 4px solid #10b981; color: #065f46; }
+        .card-amber  { border-bottom: 4px solid #f59e0b; color: #92400e; }
+        .card-red    { border-bottom: 4px solid #ef4444; color: #991b1b; }
+        .card-purple { border-bottom: 4px solid #a855f7; color: #6b21a8; background: #faf5ff; }
+        .card-dark   { border-bottom: 4px solid #64748b; color: #1e293b; background: #f8fafc; cursor: default; }
     </style>
 
     <h1 class="page-header">ตรวจสอบงาน Scan QA</h1>
-    <div class="dashboard" id="dashArea" style="position:relative !important; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+    <div class="dashboard" id="dashArea" style="position:relative !important; display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; margin-bottom: 20px;">
         <div class="card card-blue" onclick="toggleOfficeMenu(event, 'total')"><div>ยอดในไฟล์</div><div id="totalCount" class="card-val">0</div></div>
         <div class="card card-green" onclick="toggleOfficeMenu(event, 'scanned')"><div>แสกนพบแล้ว</div><div id="scannedCount" class="card-val">0</div></div>
         <div class="card card-amber" onclick="toggleOfficeMenu(event, 'pending')"><div>ยังไม่ได้แสกน</div><div id="pendingCount" class="card-val">0</div></div>
         <div class="card card-red" onclick="toggleOfficeMenu(event, 'error')"><div>ไม่มีข้อมูล</div><div id="errorCount" class="card-val">0</div></div>
+        <div class="card card-purple" onclick="toggleOfficeMenu(event, 'duplicate')"><div>ข้อมูลซ้ำ</div><div id="duplicateCount" class="card-val">0</div></div>
+        <div class="card card-dark"><div>Total รวม</div><div id="totalScanDisplay" class="card-val">0</div></div>
 
         <div id="officeMenu" class="detail-overlay hidden">
             <div class="detail-header">
@@ -122,7 +138,7 @@ document.getElementById('checkPage').innerHTML = `
 `;
 
 // ==========================================
-// 3. DATA IMPORT & PREPARATION (นำเข้าข้อมูล)
+// 3. DATA IMPORT & PREPARATION
 // ==========================================
 function refreshCheckStaffDropdown() {
     const dropdown = document.getElementById('checkStaffList');
@@ -171,14 +187,18 @@ function importCheckData() {
 }
 
 // ==========================================
-// 4. SCANNING LOGIC (ระบบสแกน)
+// 4. SCANNING LOGIC (ปรับแก้ระบบข้อมูลซ้ำและตัวนับ)
 // ==========================================
 document.getElementById('scanInput').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         const val = e.target.value.trim();
         if (val) {
+            totalScanCount++; 
             if (checkScannedSet.has(val)) {
+                duplicateCount++;
+                checkDuplicates.push({ val: val, scanOrder: totalScanCount });
                 showModal({ title: "ข้อมูลซ้ำ!", text: "บาร์โค้ด " + val + " ถูกแสกนไปแล้ว", icon: "⚠️" });
+                document.getElementById('statusMsg').innerHTML = '<span style="color:#a855f7;">⚠️ ข้อมูลซ้ำ</span>';
             } else {
                 checkScannedSet.add(val);
                 const item = checkItems.find(i => i.val === val);
@@ -186,34 +206,37 @@ document.getElementById('scanInput').addEventListener('keypress', (e) => {
                 if (item) {
                     validCount++; 
                     item.isScanned = true; 
-                    item.scanOrder = validCount; // ลำดับปกติสำหรับของที่พบ (1, 2, 3...)
+                    item.scanOrder = totalScanCount; 
                     document.getElementById('statusMsg').innerHTML = '<span style="color:#10b981;">✅ ถูกต้อง</span>';
                 } else {
                     errorCount++;
-                    totalErrorCount++; // นับลำดับแยกเฉพาะกลุ่ม Error
+                    totalErrorCount++;
                     checkErrors.push({ 
                         val: val, 
-                        errorOrder: totalErrorCount, // ใช้ลำดับแยกชุดใหม่ (1, 2, 3...)
+                        errorOrder: totalErrorCount, 
+                        scanOrder: totalScanCount, 
                         type: 'ERROR' 
                     });
                     document.getElementById('statusMsg').innerHTML = '<span style="color:#ef4444;">❌ ไม่พบข้อมูล</span>';
                 }
-                updateCheckTable(); updateDashboard();
             }
+            updateCheckTable(); updateDashboard();
         }
         e.target.value = '';
     }
 });
 
 // ==========================================
-// 5. UI UPDATES & DASHBOARD (การแสดงผล)
+// 5. UI UPDATES & DASHBOARD (เรียงลำดับใหม่และอัปเดต Dashboard)
 // ==========================================
 function updateDashboard() {
     document.getElementById('totalCount').innerText = checkItems.length;
     document.getElementById('scannedCount').innerText = validCount;
     document.getElementById('pendingCount').innerText = checkItems.filter(i => !i.isScanned).length;
     document.getElementById('errorCount').innerText = errorCount;
-    document.getElementById('listProgress').innerText = `ข้อมูลถูกต้อง: ${validCount} | ไม่พบ: ${errorCount}`;
+    document.getElementById('duplicateCount').innerText = duplicateCount;
+    document.getElementById('totalScanDisplay').innerText = totalScanCount;
+    document.getElementById('listProgress').innerText = `ถูกต้อง: ${validCount} | ไม่พบ: ${errorCount} | ซ้ำ: ${duplicateCount}`;
 }
 
 function toggleOfficeMenu(e, type) {
@@ -223,7 +246,9 @@ function toggleOfficeMenu(e, type) {
     const cardRect = e.currentTarget.getBoundingClientRect();
     const parentRect = document.getElementById('dashArea').getBoundingClientRect();
 
-    if (!menu.classList.contains('hidden') && menu.dataset.current === type) { return closeOfficeMenu(); }
+    if (!menu.classList.contains('hidden') && menu.dataset.current === type) { 
+        return closeOfficeMenu(); 
+    }
 
     menu.style.left = (cardRect.left - parentRect.left) + 'px';
     menu.style.width = cardRect.width + 'px';
@@ -232,105 +257,157 @@ function toggleOfficeMenu(e, type) {
     
     let items = [];
     let themeColor = '#3b82f6';
+    let html = '';
 
     if (type === 'total') { 
         title.innerHTML = "ยอดในไฟล์"; 
         items = [...checkItems].sort((a, b) => a.originalIdx - b.originalIdx); 
+        themeColor = '#3b82f6';
+        html = items.map((i) => `
+            <div class="detail-box" style="border-left: 5px solid ${themeColor};">
+                <div><b>ลำดับ: ${i.originalIdx}</b> | Seq.${i.val}</div>
+                ${i.isScanned ? '<span class="status-ok">✅</span>' : '<span>-</span>'}
+            </div>`).join('');
     }
     else if (type === 'scanned') { 
         title.innerHTML = "แสกนพบแล้ว"; 
         items = checkItems.filter(i => i.isScanned).sort((a, b) => a.scanOrder - b.scanOrder); 
         themeColor = '#10b981';
+        html = items.map((i, idx) => `
+            <div class="detail-box" style="border-left: 5px solid ${themeColor};">
+                <div><b>ลำดับ: ${idx + 1}</b> | Seq.${i.val}</div>
+                <span class="status-ok">✅</span>
+            </div>`).join('');
     }
     else if (type === 'pending') { 
         title.innerHTML = "ยังไม่ได้แสกน"; 
         items = checkItems.filter(i => !i.isScanned).sort((a, b) => a.originalIdx - b.originalIdx); 
         themeColor = '#f59e0b';
+        html = items.map((i, idx) => `
+            <div class="detail-box" style="border-left: 5px solid ${themeColor};">
+                <div><b>ลำดับ: ${idx + 1}</b> | Seq.${i.val}</div>
+                <span>รอสแกน</span>
+            </div>`).join('');
     }
     else if (type === 'error') { 
         title.innerHTML = "ไม่พบข้อมูล"; 
-        // ดึงข้อมูลจาก checkErrors มาแสดง และเรียงลำดับตาม errorOrder
         items = [...checkErrors].sort((a, b) => a.errorOrder - b.errorOrder); 
         themeColor = '#ef4444';
-
-        content.innerHTML = items.length ? items.map(i => `
+        html = items.map((i, idx) => `
             <div class="detail-box" style="border-left: 5px solid ${themeColor}; background: #fff1f2;">
-                <div>
-                    <b>ลำดับ: ${i.errorOrder}</b> | 
-                    <span style="color: #475569;">ข้อมูล: ${i.val}</span>
-                </div>
-                <span style="color:#ef4444; font-weight:bold; font-size:16px;">❌</span>
-            </div>`).join('') : '<div style="text-align:center; padding:10px; color:#94a3b8;">ไม่มีข้อมูลที่ผิดพลาด</div>';
-        return;
+                <div><b>ลำดับ: ${idx + 1}</b> | Seq.${i.val}</div>
+                <span style="color:#ef4444;">❌</span>
+            </div>`).join('');
+    }
+    else if (type === 'duplicate') {
+        title.innerHTML = "ข้อมูลซ้ำ";
+        themeColor = '#a855f7';
+        html = checkDuplicates.map((i, idx) => `
+            <div class="detail-box" style="border-left: 5px solid ${themeColor}; background: #fdf4ff;">
+                <div><b>ลำดับ: ${idx + 1}</b> | Seq.${i.val}</div>
+                <span style="color:#a855f7;">⚠️</span>
+            </div>`).join('');
     }
 
-    content.innerHTML = items.length ? items.map(i => `
-        <div class="detail-box" style="border-left: 5px solid ${themeColor};">
-            <div><b>ลำดับ: ${i.scanOrder || '-'}</b> | ${i.originalIdx || i.val}</div>
-            ${i.isScanned ? '<span class="status-ok">✅</span>' : '<span>-</span>'}
-        </div>`).join('') : '<div style="text-align:center; padding:10px; color:#94a3b8;">ไม่มีข้อมูล</div>';
+    content.innerHTML = html || '<div style="text-align:center; padding:10px; color:#94a3b8;">ไม่มีข้อมูล</div>';
 }
 
 function updateCheckTable() {
     const tbody = document.getElementById('checkTableBody');
     
-    // 1. เตรียมข้อมูล: รวมทั้งรายการในไฟล์ และ รายการที่สแกนผิด (Errors)
+    // 1. เตรียมข้อมูลจาก 3 แหล่ง: สแกนปกติ, สแกนไม่พบ (Error), และ สแกนซ้ำ (Duplicates)
     const scanned = checkItems.filter(i => i.isScanned);
-    const errors = [...checkErrors]; // ดึงรายการที่ไม่พบข้อมูลมาด้วย
+    const errors = [...checkErrors];
+    const duplicates = [...checkDuplicates].map(i => ({...i, type: 'DUPLICATE'})); // เพิ่ม flag สำหรับรายการซ้ำ
     const pending = checkItems.filter(i => !i.isScanned);
 
-    // 2. จัดลำดับการแสดงผล: เอาที่สแกนล่าสุด (ทั้งถูกและผิด) ขึ้นก่อน
-    const combinedScanned = [...scanned, ...errors].sort((a, b) => {
-        const orderA = a.scanOrder || a.errorOrder || 0;
-        const orderB = b.scanOrder || b.errorOrder || 0;
-        return orderB - orderA; // เรียงจากใหม่ไปเก่า
+    // 2. รวมรายการที่สแกนแล้วทั้งหมด (ถูก, ผิด, ซ้ำ) และจัดลำดับตาม scanOrder จากใหม่ไปเก่า
+    const allScanned = [...scanned, ...errors, ...duplicates].sort((a, b) => {
+        return (b.scanOrder || 0) - (a.scanOrder || 0);
     });
     
-    const list = [...combinedScanned, ...pending];
+    // 3. รวมรายการที่รอแสกนไว้ด้านล่าง
+    const list = [...allScanned, ...pending];
 
-    tbody.innerHTML = list.length ? list.slice(0, 100).map(i => `
-        <tr style="background:${i.type === 'ERROR' ? '#fff1f2' : (i.isScanned ? '#f0fdf4' : 'white')}">
-            <td style="padding:10px; text-align:center;">${i.scanOrder || i.errorOrder || '-'}</td>
-            <td style="padding:10px; text-align:center;">${i.type === 'ERROR' ? i.val : (i.isScanned ? i.val : '')}</td>
-            <td style="padding:10px; text-align:center;">${i.type === 'ERROR' ? '-' : i.val}</td>
-            <td style="padding:10px; text-align:center;">${i.originalIdx || '-'}</td>
-            <td style="padding:10px; text-align:center; font-weight:bold; color:${i.type==='ERROR' ? '#ef4444' : (i.isScanned ? '#10b981' : '#94a3b8')}">
-                ${i.type==='ERROR' ? 'ไม่พบข้อมูล' : (i.isScanned ? 'ข้อมูลถูกต้อง' : 'รอสแกน')}
-            </td>
-        </tr>`).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = list.length ? list.slice(0, 100).map(i => {
+        // กำหนดสีพื้นหลังตามประเภทสถานะ
+        let rowBg = 'white';
+        if (i.type === 'DUPLICATE') rowBg = '#faf5ff'; // สีม่วงอ่อนสำหรับงานซ้ำ
+        else if (i.type === 'ERROR') rowBg = '#fff1f2'; // สีแดงอ่อนสำหรับไม่พบข้อมูล
+        else if (i.isScanned) rowBg = '#f0fdf4'; // สีเขียวอ่อนสำหรับข้อมูลถูกต้อง
+
+        // กำหนดข้อความและสีสถานะ
+        let statusText = 'รอสแกน';
+        let statusColor = '#94a3b8';
+        if (i.type === 'DUPLICATE') { statusText = 'ข้อมูลซ้ำ'; statusColor = '#a855f7'; }
+        else if (i.type === 'ERROR') { statusText = 'ไม่พบข้อมูล'; statusColor = '#ef4444'; }
+        else if (i.isScanned) { statusText = 'ข้อมูลถูกต้อง'; statusColor = '#10b981'; }
+
+        return `
+            <tr style="background:${rowBg}">
+                <td style="padding:10px; text-align:center;">${i.scanOrder || '-'}</td>
+                <td style="padding:10px; text-align:center;">${(i.type === 'ERROR' || i.type === 'DUPLICATE') ? i.val : (i.isScanned ? i.val : '')}</td>
+                <td style="padding:10px; text-align:center;">${(i.type === 'ERROR' || i.type === 'DUPLICATE') ? '-' : i.val}</td>
+                <td style="padding:10px; text-align:center;">${i.originalIdx || '-'}</td>
+                <td style="padding:10px; text-align:center; font-weight:bold; color:${statusColor}">
+                    ${statusText}
+                </td>
+            </tr>`;
+    }).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่มีข้อมูล</td></tr>';
 }
-
 // ==========================================
-// 6. UTILITIES (ส่งออกไฟล์ และ รีเซ็ต)
+// 6. UTILITIES (CSV Export แยกกลุ่ม)
 // ==========================================
 function downloadCheckCSV() {
     const staff = document.getElementById('checkStaffList').value;
-    let csv = "\uFEFFผู้ตรวจสอบ: " + staff + "\nลำดับแสกน,ข้อมูลแสกน,ข้อมูลไฟล์,ลำดับไฟล์,สถานะ\n";
+    let csv = "\uFEFFผู้ตรวจสอบ: " + staff + "\n";
+    csv += "ลำดับแสกน,ข้อมูลแสกน,ข้อมูลไฟล์,ลำดับไฟล์,สถานะ\n";
     
     const scannedList = checkItems.filter(i => i.isScanned).sort((a, b) => a.scanOrder - b.scanOrder);
-    const pendingList = checkItems.filter(i => !i.isScanned).sort((a, b) => a.originalIdx - b.originalIdx);
-    const errorList = [...checkErrors].sort((a, b) => a.errorOrder - b.errorOrder);
+    csv += "--- กลุ่มที่ 1: แสกนพบข้อมูล ---\n";
+    if (scannedList.length > 0) {
+        scannedList.forEach((i, index) => {
+            csv += `${index + 1},${i.val},${i.val},${i.originalIdx},ข้อมูลถูกต้อง✅\n`;
+        });
+    }
 
-    csv += "--- กลุ่มที่ 1: แสกนพบข้อมูล --- \n";
-    scannedList.forEach(i => csv += `${i.scanOrder},${i.val},${i.val},${i.originalIdx},ข้อมูลถูกต้อง✅\n`);
-    csv += "\n--- กลุ่มที่ 2: รายการรอแสกน --- \n";
-    pendingList.forEach(i => csv += `-, ,${i.val},${i.originalIdx},รอสแกน\n`);
-    csv += "\n--- กลุ่มที่ 3: ไม่พบข้อมูลในไฟล์ --- \n";
-    errorList.forEach(i => csv += `${i.errorOrder},${i.val},-, -,ไม่พบข้อมูล\n`);
+    const pendingList = checkItems.filter(i => !i.isScanned).sort((a, b) => a.originalIdx - b.originalIdx);
+    csv += "--- กลุ่มที่ 2: รายการรอแสกน ---\n";
+    if (pendingList.length > 0) {
+        pendingList.forEach((i) => {
+            csv += `-, ,${i.val},${i.originalIdx},รอสแกน\n`;
+        });
+    }
+
+    csv += "--- กลุ่มที่ 3: ไม่พบข้อมูลในไฟล์ ---\n";
+    if (checkErrors.length > 0) {
+        checkErrors.sort((a, b) => a.errorOrder - b.errorOrder).forEach((i, index) => {
+            csv += `${index + 1},${i.val},-, -,ไม่พบข้อมูล\n`;
+        });
+    }
+
+    csv += "--- กลุ่มที่ 4: ข้อมูลแสกนซ้ำ ---\n";
+    if (checkDuplicates.length > 0) {
+        checkDuplicates.forEach((i, idx) => {
+            csv += `${idx + 1},${i.val},-, -,ข้อมูลซ้ำ⚠️\n`;
+        });
+    }
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
+    const dateStr = new Date().toLocaleDateString().replace(/\//g, '-');
+    const timeStr = new Date().toLocaleTimeString().replace(/:/g, '-');
+    
     link.href = URL.createObjectURL(blob);
-    link.download = `QA_Scan_Report_${selectedBankCheck}_${(currentFileCheck || 'Report').replace(/Reprint/g, '')}.csv`;
+    link.download = `QA_Report_${selectedBankCheck}_${dateStr}_${timeStr}.csv`;
     link.click();
 }
 
 function confirmClearData() {
     showModal({ title: "ล้างการสแกน", text: "ต้องการล้างผลการสแกนทั้งหมดใช่หรือไม่?", showCancel: true, onConfirm: () => {
         checkItems.forEach(i => { i.isScanned = false; i.scanOrder = null; });
-        checkErrors = []; checkScannedSet.clear(); 
-        validCount = 0; errorCount = 0; 
-        totalErrorCount = 0; // รีเซ็ตตัวนับ Error
+        checkErrors = []; checkDuplicates = []; checkScannedSet.clear(); 
+        validCount = 0; errorCount = 0; duplicateCount = 0; totalScanCount = 0; totalErrorCount = 0;
         updateCheckTable(); updateDashboard();
     }});
 }
@@ -339,14 +416,13 @@ function confirmResetImport() {
     showModal({
         title: "ยืนยันการเปลี่ยนไฟล์", text: "ต้องการล้างข้อมูลทั้งหมดเพื่อนำเข้าไฟล์ใหม่ใช่หรือไม่?", icon: "🔄", showCancel: true,
         onConfirm: () => {
-            checkItems = []; checkErrors = []; checkScannedSet.clear();
-            currentFileCheck = ''; validCount = 0; errorCount = 0; totalErrorCount = 0;
+            checkItems = []; checkErrors = []; checkDuplicates = []; checkScannedSet.clear();
+            currentFileCheck = ''; validCount = 0; errorCount = 0; duplicateCount = 0; totalScanCount = 0; totalErrorCount = 0;
             document.getElementById('importArea').classList.remove('hidden');
             document.getElementById('fileDisplay').classList.add('hidden');
             document.getElementById('rawText').value = ''; document.getElementById('fileInput').value = '';
             document.getElementById('scanInput').value = ''; document.getElementById('scanInput').disabled = true;
-            document.getElementById('statusMsg').innerHTML = ''; document.getElementById('btnDownload').classList.add('hidden');
-            updateCheckTable(); updateDashboard(); closeOfficeMenu();
+            document.getElementById('statusMsg').innerHTML = ''; updateCheckTable(); updateDashboard(); closeOfficeMenu();
         }
     });
 }
@@ -356,9 +432,6 @@ function toggleCustomBankInput(s) {
     if (s.value === 'custom') { inp.classList.remove('hidden'); inp.focus(); } else { inp.classList.add('hidden'); }
 }
 
-// ==========================================
-// 7. MODALS & EVENTS (แจ้งเตือน และ เหตุการณ์)
-// ==========================================
 function closeOfficeMenu() { document.getElementById('officeMenu').classList.add('hidden'); }
 function showModal({ title, text, icon, showCancel, onConfirm }) {
     document.getElementById('mTitle').innerText = title;
