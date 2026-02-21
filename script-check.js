@@ -39,16 +39,27 @@ document.getElementById('checkPage').innerHTML = `
         .btn-action { width: 100%; background: #3b82f6; color: white; border: none; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; text-align: center; }
         .btn-action:hover { background: #2563eb; }
 
-        /* ปรับปรุงสไตล์ Card ให้เหมือนกันทุกหัวข้อ */
+        /* ปรับปรุงสไตล์ Card */
         .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); text-align: center; cursor: pointer; }
         .card-val { font-size: 28px; font-weight: 800; margin-top: 5px; }
-        
         .card-blue   { border-bottom: 4px solid #3b82f6; color: #1e40af; }
         .card-green  { border-bottom: 4px solid #10b981; color: #065f46; }
         .card-amber  { border-bottom: 4px solid #f59e0b; color: #92400e; }
         .card-red    { border-bottom: 4px solid #ef4444; color: #991b1b; }
         .card-purple { border-bottom: 4px solid #a855f7; color: #6b21a8; background: #faf5ff; }
         .card-dark   { border-bottom: 4px solid #64748b; color: #1e293b; background: #f8fafc; cursor: default; }
+
+        /* CSS สำหรับการกะพริบข้อมูลซ้ำ */
+        @keyframes blink-purple {
+            0% { background-color: transparent; }
+            50% { background-color: #d8b4fe; box-shadow: inset 0 0 10px #a855f7; }
+            100% { background-color: transparent; }
+        }
+        .row-blink { 
+            animation: blink-purple 0.6s ease-in-out infinite; 
+            border: 2px solid #a855f7 !important; 
+            font-weight: bold; 
+        }
     </style>
 
     <h1 class="page-header">ตรวจสอบงาน Scan QA</h1>
@@ -58,7 +69,7 @@ document.getElementById('checkPage').innerHTML = `
         <div class="card card-amber" onclick="toggleOfficeMenu(event, 'pending')"><div>ยังไม่ได้แสกน</div><div id="pendingCount" class="card-val">0</div></div>
         <div class="card card-red" onclick="toggleOfficeMenu(event, 'error')"><div>ไม่มีข้อมูล</div><div id="errorCount" class="card-val">0</div></div>
         <div class="card card-purple" onclick="toggleOfficeMenu(event, 'duplicate')"><div>ข้อมูลซ้ำ</div><div id="duplicateCount" class="card-val">0</div></div>
-        <div class="card card-dark"><div>Total รวม</div><div id="totalScanDisplay" class="card-val">0</div></div>
+        <div class="card card-dark"><div>Total Scan</div><div id="totalScanDisplay" class="card-val">0</div></div>
 
         <div id="officeMenu" class="detail-overlay hidden">
             <div class="detail-header">
@@ -187,18 +198,34 @@ function importCheckData() {
 }
 
 // ==========================================
-// 4. SCANNING LOGIC (ปรับแก้ระบบข้อมูลซ้ำและตัวนับ)
+// 4. SCANNING LOGIC (รวมการตรวจจับซ้ำและ Blink)
 // ==========================================
 document.getElementById('scanInput').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         const val = e.target.value.trim();
         if (val) {
             totalScanCount++; 
+            
             if (checkScannedSet.has(val)) {
                 duplicateCount++;
-                checkDuplicates.push({ val: val, scanOrder: totalScanCount });
-                showModal({ title: "ข้อมูลซ้ำ!", text: "บาร์โค้ด " + val + " ถูกแสกนไปแล้ว", icon: "⚠️" });
-                document.getElementById('statusMsg').innerHTML = '<span style="color:#a855f7;">⚠️ ข้อมูลซ้ำ</span>';
+                // หาว่าข้อมูลนี้เคยแสกนไปแล้วที่ลำดับไหน
+                // ตรวจทั้งในไฟล์ (checkItems) และนอกไฟล์ (checkErrors)
+                const inFileList = checkItems.find(i => i.val === val && i.isScanned);
+                const inErrorList = checkErrors.find(i => i.val === val);
+                const originalOrder = inFileList ? inFileList.scanOrder : (inErrorList ? inErrorList.scanOrder : '?');
+                
+                checkDuplicates.push({ val: val, scanOrder: totalScanCount, type: 'DUPLICATE', duplicateWith: originalOrder });
+                
+                showModal({ 
+                    title: "ข้อมูลซ้ำ!", 
+                    text: `ลำดับที่ ${totalScanCount} ซ้ำกับลำดับที่ ${originalOrder}`,
+                    icon: "⚠️"
+                });
+                document.getElementById('statusMsg').innerHTML = `<span style="color:#a855f7;">⚠️ ซ้ำกับลำดับ ${originalOrder}</span>`;
+                
+                // อัปเดตตารางก่อนเพื่อให้มีแถวใหม่ แล้วจึงสั่ง Blink
+                updateCheckTable(); 
+                setTimeout(() => blinkDuplicateRows(totalScanCount, originalOrder), 100);
             } else {
                 checkScannedSet.add(val);
                 const item = checkItems.find(i => i.val === val);
@@ -219,15 +246,39 @@ document.getElementById('scanInput').addEventListener('keypress', (e) => {
                     });
                     document.getElementById('statusMsg').innerHTML = '<span style="color:#ef4444;">❌ ไม่พบข้อมูล</span>';
                 }
+                updateCheckTable();
             }
-            updateCheckTable(); updateDashboard();
+            updateDashboard();
         }
         e.target.value = '';
     }
 });
 
+function blinkDuplicateRows(currentOrder, originalOrder) {
+    closeOfficeMenu();
+    const rows = document.getElementById('checkTableBody').getElementsByTagName('tr');
+    let foundRow = null;
+    
+    // ล้างสถานะ Blink เก่า
+    for (let row of rows) row.classList.remove('row-blink');
+    
+    for (let row of rows) {
+        const orderCell = row.cells[0].innerText;
+        if (orderCell == currentOrder || orderCell == originalOrder) {
+            row.classList.add('row-blink');
+            if (orderCell == currentOrder) foundRow = row;
+        }
+    }
+    
+    if (foundRow) foundRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    setTimeout(() => { 
+        for (let row of rows) row.classList.remove('row-blink'); 
+    }, 5000);
+}
+
 // ==========================================
-// 5. UI UPDATES & DASHBOARD (เรียงลำดับใหม่และอัปเดต Dashboard)
+// 5. UI UPDATES & DASHBOARD
 // ==========================================
 function updateDashboard() {
     document.getElementById('totalCount').innerText = checkItems.length;
@@ -237,6 +288,46 @@ function updateDashboard() {
     document.getElementById('duplicateCount').innerText = duplicateCount;
     document.getElementById('totalScanDisplay').innerText = totalScanCount;
     document.getElementById('listProgress').innerText = `ถูกต้อง: ${validCount} | ไม่พบ: ${errorCount} | ซ้ำ: ${duplicateCount}`;
+}
+
+function updateCheckTable() {
+    const tbody = document.getElementById('checkTableBody');
+    const scanned = checkItems.filter(i => i.isScanned);
+    const errors = [...checkErrors];
+    const duplicates = [...checkDuplicates];
+    const pending = checkItems.filter(i => !i.isScanned);
+
+    // รวมรายการที่สแกนแล้ว (ถูก, ผิด, ซ้ำ) เรียงลำดับจากใหม่ไปเก่า
+    const allScanned = [...scanned, ...errors, ...duplicates].sort((a, b) => (b.scanOrder || 0) - (a.scanOrder || 0));
+    const list = [...allScanned, ...pending];
+
+    tbody.innerHTML = list.length ? list.slice(0, 100).map(i => {
+        let rowBg = 'white';
+        let statusText = 'รอสแกน';
+        let statusColor = '#94a3b8';
+
+        if (i.type === 'DUPLICATE') { 
+            rowBg = '#faf5ff'; 
+            // แก้ไขตรงนี้: ให้แสดงลำดับที่ซ้ำด้วย
+            statusText = `ข้อมูลซ้ำ (ลำดับ ${i.duplicateWith})`; 
+            statusColor = '#a855f7'; 
+        } else if (i.type === 'ERROR') { 
+            rowBg = '#fff1f2'; statusText = 'ไม่พบข้อมูล'; statusColor = '#ef4444'; 
+        } else if (i.isScanned) { 
+            rowBg = '#f0fdf4'; statusText = 'ข้อมูลถูกต้อง'; statusColor = '#10b981'; 
+        }
+
+        return `
+            <tr style="background:${rowBg}">
+                <td style="padding:10px; text-align:center;">${i.scanOrder || '-'}</td>
+                <td style="padding:10px; text-align:center;">${(i.type === 'ERROR' || i.type === 'DUPLICATE') ? i.val : (i.isScanned ? i.val : '')}</td>
+                <td style="padding:10px; text-align:center;">${(i.type === 'ERROR' || i.type === 'DUPLICATE') ? '-' : i.val}</td>
+                <td style="padding:10px; text-align:center;">${i.originalIdx || '-'}</td>
+                <td style="padding:10px; text-align:center; font-weight:bold; color:${statusColor}">
+                    ${statusText}
+                </td>
+            </tr>`;
+    }).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่มีข้อมูล</td></tr>';
 }
 
 function toggleOfficeMenu(e, type) {
@@ -255,142 +346,101 @@ function toggleOfficeMenu(e, type) {
     menu.dataset.current = type;
     menu.classList.remove('hidden');
     
-    let items = [];
     let themeColor = '#3b82f6';
     let html = '';
 
     if (type === 'total') { 
         title.innerHTML = "ยอดในไฟล์"; 
-        items = [...checkItems].sort((a, b) => a.originalIdx - b.originalIdx); 
-        themeColor = '#3b82f6';
-        html = items.map((i) => `
-            <div class="detail-box" style="border-left: 5px solid ${themeColor};">
+        html = [...checkItems].sort((a, b) => a.originalIdx - b.originalIdx).map(i => `
+            <div class="detail-box" style="border-left: 5px solid #3b82f6;">
                 <div><b>ลำดับ: ${i.originalIdx}</b> | Seq.${i.val}</div>
                 ${i.isScanned ? '<span class="status-ok">✅</span>' : '<span>-</span>'}
             </div>`).join('');
-    }
-    else if (type === 'scanned') { 
+    } else if (type === 'scanned') { 
         title.innerHTML = "แสกนพบแล้ว"; 
-        items = checkItems.filter(i => i.isScanned).sort((a, b) => a.scanOrder - b.scanOrder); 
-        themeColor = '#10b981';
-        html = items.map((i, idx) => `
-            <div class="detail-box" style="border-left: 5px solid ${themeColor};">
-                <div><b>ลำดับ: ${idx + 1}</b> | Seq.${i.val}</div>
+        html = checkItems.filter(i => i.isScanned).sort((a, b) => a.scanOrder - b.scanOrder).map((i, idx) => `
+            <div class="detail-box" style="border-left: 5px solid #10b981;">
+                <div><b>แสกนที่: ${i.scanOrder}</b> | Seq.${i.val}</div>
                 <span class="status-ok">✅</span>
             </div>`).join('');
-    }
-    else if (type === 'pending') { 
+    } else if (type === 'pending') { 
         title.innerHTML = "ยังไม่ได้แสกน"; 
-        items = checkItems.filter(i => !i.isScanned).sort((a, b) => a.originalIdx - b.originalIdx); 
-        themeColor = '#f59e0b';
-        html = items.map((i, idx) => `
-            <div class="detail-box" style="border-left: 5px solid ${themeColor};">
-                <div><b>ลำดับ: ${idx + 1}</b> | Seq.${i.val}</div>
+        html = checkItems.filter(i => !i.isScanned).map(i => `
+            <div class="detail-box" style="border-left: 5px solid #f59e0b;">
+                <div><b>ไฟล์ลำดับ: ${i.originalIdx}</b> | Seq.${i.val}</div>
                 <span>รอสแกน</span>
             </div>`).join('');
-    }
-    else if (type === 'error') { 
+    } else if (type === 'error') { 
         title.innerHTML = "ไม่พบข้อมูล"; 
-        items = [...checkErrors].sort((a, b) => a.errorOrder - b.errorOrder); 
-        themeColor = '#ef4444';
-        html = items.map((i, idx) => `
-            <div class="detail-box" style="border-left: 5px solid ${themeColor}; background: #fff1f2;">
-                <div><b>ลำดับ: ${idx + 1}</b> | Seq.${i.val}</div>
+        html = checkErrors.map(i => `
+            <div class="detail-box" style="border-left: 5px solid #ef4444; background: #fff1f2;">
+                <div><b>แสกนที่: ${i.scanOrder}</b> | Seq.${i.val}</div>
                 <span style="color:#ef4444;">❌</span>
             </div>`).join('');
-    }
-    else if (type === 'duplicate') {
+    } else if (type === 'duplicate') {
         title.innerHTML = "ข้อมูลซ้ำ";
-        themeColor = '#a855f7';
-        html = checkDuplicates.map((i, idx) => `
-            <div class="detail-box" style="border-left: 5px solid ${themeColor}; background: #fdf4ff;">
-                <div><b>ลำดับ: ${idx + 1}</b> | Seq.${i.val}</div>
-                <span style="color:#a855f7;">⚠️</span>
+        html = checkDuplicates.map(i => `
+            <div class="detail-box" style="border-left: 5px solid #a855f7; background: #fdf4ff;">
+                <div><b>แสกนที่: ${i.scanOrder}</b> | Seq.${i.val}</div>
+                <small>ซ้ำกับ: ${i.duplicateWith}</small>
             </div>`).join('');
     }
 
     content.innerHTML = html || '<div style="text-align:center; padding:10px; color:#94a3b8;">ไม่มีข้อมูล</div>';
 }
 
-function updateCheckTable() {
-    const tbody = document.getElementById('checkTableBody');
-    
-    // 1. เตรียมข้อมูลจาก 3 แหล่ง: สแกนปกติ, สแกนไม่พบ (Error), และ สแกนซ้ำ (Duplicates)
-    const scanned = checkItems.filter(i => i.isScanned);
-    const errors = [...checkErrors];
-    const duplicates = [...checkDuplicates].map(i => ({...i, type: 'DUPLICATE'})); // เพิ่ม flag สำหรับรายการซ้ำ
-    const pending = checkItems.filter(i => !i.isScanned);
-
-    // 2. รวมรายการที่สแกนแล้วทั้งหมด (ถูก, ผิด, ซ้ำ) และจัดลำดับตาม scanOrder จากใหม่ไปเก่า
-    const allScanned = [...scanned, ...errors, ...duplicates].sort((a, b) => {
-        return (b.scanOrder || 0) - (a.scanOrder || 0);
-    });
-    
-    // 3. รวมรายการที่รอแสกนไว้ด้านล่าง
-    const list = [...allScanned, ...pending];
-
-    tbody.innerHTML = list.length ? list.slice(0, 100).map(i => {
-        // กำหนดสีพื้นหลังตามประเภทสถานะ
-        let rowBg = 'white';
-        if (i.type === 'DUPLICATE') rowBg = '#faf5ff'; // สีม่วงอ่อนสำหรับงานซ้ำ
-        else if (i.type === 'ERROR') rowBg = '#fff1f2'; // สีแดงอ่อนสำหรับไม่พบข้อมูล
-        else if (i.isScanned) rowBg = '#f0fdf4'; // สีเขียวอ่อนสำหรับข้อมูลถูกต้อง
-
-        // กำหนดข้อความและสีสถานะ
-        let statusText = 'รอสแกน';
-        let statusColor = '#94a3b8';
-        if (i.type === 'DUPLICATE') { statusText = 'ข้อมูลซ้ำ'; statusColor = '#a855f7'; }
-        else if (i.type === 'ERROR') { statusText = 'ไม่พบข้อมูล'; statusColor = '#ef4444'; }
-        else if (i.isScanned) { statusText = 'ข้อมูลถูกต้อง'; statusColor = '#10b981'; }
-
-        return `
-            <tr style="background:${rowBg}">
-                <td style="padding:10px; text-align:center;">${i.scanOrder || '-'}</td>
-                <td style="padding:10px; text-align:center;">${(i.type === 'ERROR' || i.type === 'DUPLICATE') ? i.val : (i.isScanned ? i.val : '')}</td>
-                <td style="padding:10px; text-align:center;">${(i.type === 'ERROR' || i.type === 'DUPLICATE') ? '-' : i.val}</td>
-                <td style="padding:10px; text-align:center;">${i.originalIdx || '-'}</td>
-                <td style="padding:10px; text-align:center; font-weight:bold; color:${statusColor}">
-                    ${statusText}
-                </td>
-            </tr>`;
-    }).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่มีข้อมูล</td></tr>';
-}
 // ==========================================
-// 6. UTILITIES (CSV Export แยกกลุ่ม)
+// 6. UTILITIES (CSV Export & Modals)
 // ==========================================
 function downloadCheckCSV() {
     const staff = document.getElementById('checkStaffList').value;
     let csv = "\uFEFFผู้ตรวจสอบ: " + staff + "\n";
-    csv += "ลำดับแสกน,ข้อมูลแสกน,ข้อมูลไฟล์,ลำดับไฟล์,สถานะ\n";
+    csv += "ลำดับในกลุ่ม,ข้อมูลแสกน,ข้อมูลไฟล์,ลำดับไฟล์,สถานะ\n";
     
+    // --- กลุ่มที่ 1: แสกนพบข้อมูล ---
     const scannedList = checkItems.filter(i => i.isScanned).sort((a, b) => a.scanOrder - b.scanOrder);
     csv += "--- กลุ่มที่ 1: แสกนพบข้อมูล ---\n";
     if (scannedList.length > 0) {
         scannedList.forEach((i, index) => {
+            // index + 1 จะเริ่มนับ 1 ใหม่เสมอในกลุ่มนี้
             csv += `${index + 1},${i.val},${i.val},${i.originalIdx},ข้อมูลถูกต้อง✅\n`;
         });
+    } else {
+        csv += "ไม่มีข้อมูล\n";
     }
 
+    // --- กลุ่มที่ 2: รายการรอแสกน ---
     const pendingList = checkItems.filter(i => !i.isScanned).sort((a, b) => a.originalIdx - b.originalIdx);
     csv += "--- กลุ่มที่ 2: รายการรอแสกน ---\n";
     if (pendingList.length > 0) {
-        pendingList.forEach((i) => {
-            csv += `-, ,${i.val},${i.originalIdx},รอสแกน\n`;
+        pendingList.forEach((i, index) => {
+            // เริ่มนับ 1 ใหม่สำหรับรายการที่ยังไม่ได้แสกน
+            csv += `${index + 1}, ,${i.val},${i.originalIdx},รอสแกน\n`;
         });
+    } else {
+        csv += "ไม่มีข้อมูล\n";
     }
 
+    // --- กลุ่มที่ 3: ไม่พบข้อมูลในไฟล์ ---
     csv += "--- กลุ่มที่ 3: ไม่พบข้อมูลในไฟล์ ---\n";
     if (checkErrors.length > 0) {
-        checkErrors.sort((a, b) => a.errorOrder - b.errorOrder).forEach((i, index) => {
+        checkErrors.sort((a, b) => a.scanOrder - b.scanOrder).forEach((i, index) => {
+            // เริ่มนับ 1 ใหม่สำหรับรายการที่แสกนแล้วไม่เจอ
             csv += `${index + 1},${i.val},-, -,ไม่พบข้อมูล\n`;
         });
+    } else {
+        csv += "ไม่มีข้อมูล\n";
     }
 
+    // --- กลุ่มที่ 4: ข้อมูลแสกนซ้ำ ---
     csv += "--- กลุ่มที่ 4: ข้อมูลแสกนซ้ำ ---\n";
     if (checkDuplicates.length > 0) {
-        checkDuplicates.forEach((i, idx) => {
-            csv += `${idx + 1},${i.val},-, -,ข้อมูลซ้ำ⚠️\n`;
+        checkDuplicates.forEach((i, index) => {
+            // เริ่มนับ 1 ใหม่สำหรับรายการที่แสกนซ้ำ พร้อมระบุว่าซ้ำกับลำดับไหน
+            csv += `${index + 1},${i.val},-, -,ข้อมูลซ้ำ (ซ้ำกับลำดับ:${i.duplicateWith})⚠️\n`;
         });
+    } else {
+        csv += "ไม่มีข้อมูล\n";
     }
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -399,7 +449,7 @@ function downloadCheckCSV() {
     const timeStr = new Date().toLocaleTimeString().replace(/:/g, '-');
     
     link.href = URL.createObjectURL(blob);
-    link.download = `QA_Report_${selectedBankCheck}_${dateStr}_${timeStr}.csv`;
+    link.download = `QA_Scan_Report_${selectedBankCheck}_${(currentFileCheck || 'Report').replace(/Reprint/g, '')}.csv`;
     link.click();
 }
 
