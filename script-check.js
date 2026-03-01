@@ -62,15 +62,14 @@ document.getElementById('checkPage').innerHTML = `
         }
     </style>
 
-    <h1 class="page-header">ตรวจสอบงาน Scan QA</h1>
-    <div class="dashboard" id="dashArea" style="position:relative !important; display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; margin-bottom: 20px;">
+<h1 class="page-header">ตรวจสอบงาน Scan QA</h1>
+    <div class="dashboard" id="dashArea" style="position:relative !important; display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px;">
         <div class="card card-blue" onclick="toggleOfficeMenu(event, 'total')"><div>ยอดในไฟล์</div><div id="totalCount" class="card-val">0</div></div>
         <div class="card card-green" onclick="toggleOfficeMenu(event, 'scanned')"><div>แสกนพบแล้ว</div><div id="scannedCount" class="card-val">0</div></div>
         <div class="card card-amber" onclick="toggleOfficeMenu(event, 'pending')"><div>ยังไม่ได้แสกน</div><div id="pendingCount" class="card-val">0</div></div>
         <div class="card card-red" onclick="toggleOfficeMenu(event, 'error')"><div>ไม่มีข้อมูล</div><div id="errorCount" class="card-val">0</div></div>
         <div class="card card-purple" onclick="toggleOfficeMenu(event, 'duplicate')"><div>ข้อมูลซ้ำ</div><div id="duplicateCount" class="card-val">0</div></div>
-        <div class="card card-dark"><div>Total Scan</div><div id="totalScanDisplay" class="card-val">0</div></div>
-
+        
         <div id="officeMenu" class="detail-overlay hidden">
             <div class="detail-header">
                 <b id="menuTitle" style="font-size:15px; line-height:1.2;">รายการทั้งหมด</b>
@@ -286,7 +285,7 @@ function updateDashboard() {
     document.getElementById('pendingCount').innerText = checkItems.filter(i => !i.isScanned).length;
     document.getElementById('errorCount').innerText = errorCount;
     document.getElementById('duplicateCount').innerText = duplicateCount;
-    document.getElementById('totalScanDisplay').innerText = totalScanCount;
+    // document.getElementById('totalScanDisplay').innerText = totalScanCount;
     document.getElementById('listProgress').innerText = `ถูกต้อง: ${validCount} | ไม่พบ: ${errorCount} | ซ้ำ: ${duplicateCount}`;
 }
 
